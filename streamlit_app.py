@@ -21,10 +21,11 @@ with tab1:
     st.header("📂 Dataset")
     
     required_columns = [
-        'harga_pakan_ternak_broiler',
-        'harga_DOC_broiler',
-        'harga_jagung_tk_peternak',
-        'harga_daging_ayam_broiler'
+        'Date',
+        'Harga Pakan Ternak Broiler',
+        'Harga DOC Broiler',
+        'Harga Jagung TK Peternak',
+        'Harga Daging Ayam Broiler'
     ]
 
     uploaded_file = st.file_uploader("Upload Dataset Excel (.xlsx)", type=["xlsx"])
