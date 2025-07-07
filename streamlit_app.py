@@ -14,7 +14,14 @@ st.set_page_config(
 st.title("📊 Dashboard Prediksi Harga Daging Ayam Broiler - Jawa Timur")
 
 # Tabs
-tab1, tab2, tab3, tab4 = st.tabs(["📂 Dataset", "📈 Visualisasi", "🤖 Model", "📉 Hasil Prediksi"])
+# Tabs
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    "📂 Dataset", 
+    "⚙️ Preprocessing", 
+    "📈 Visualisasi", 
+    "🤖 Model", 
+    "📉 Hasil Prediksi"
+])
 
 # Tab 1 - Dataset
 with tab1:
@@ -38,6 +45,7 @@ with tab1:
             if missing_cols:
                 st.error(f"❌ Kolom berikut tidak ditemukan di file Excel: {', '.join(missing_cols)}")
             else:
+                st.session_state['df'] = df  # Simpan df ke session
                 st.success("✅ Dataset valid!")
                 st.write("Data Preview:")
                 st.dataframe(df.head())
@@ -50,14 +58,38 @@ with tab1:
     else:
         st.info("Silakan upload file Excel (.xlsx) yang berisi semua variabel yang dibutuhkan.")
 
-# Tab 2 - Visualisasi
+# Tab 2 - Preprocessing
 with tab2:
+    st.header("⚙️ Preprocessing Data")
+
+    if 'df' in st.session_state:
+        df = st.session_state['df'].copy()
+
+        st.subheader("🔠 Normalisasi Nama Kolom")
+        df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
+        st.write("Kolom setelah dinormalisasi:")
+        st.write(df.columns.tolist())
+
+        st.subheader("🧼 Cek Missing Values")
+        st.write(df.isnull().sum())
+
+        st.subheader("🧮 Statistik Ringkas")
+        st.write(df.describe())
+
+        st.session_state['df_clean'] = df  # Simpan versi yang sudah diproses
+    else:
+        st.warning("Upload dataset terlebih dahulu di tab 📂 Dataset.")
+
+# Tab 3 - Visualisasi
+with tab3:
     st.header("📈 Visualisasi Dataset")
 
-    if 'df' in locals():
+    if 'df_clean' in st.session_state:
+        df = st.session_state['df_clean']
+
         st.subheader("Distribusi Harga Daging Ayam Broiler")
         fig1, ax1 = plt.subplots()
-        sns.histplot(df['harga_daging_ayam'], kde=True, ax=ax1)
+        sns.histplot(df['harga_daging_ayam_broiler'], kde=True, ax=ax1)
         st.pyplot(fig1)
 
         st.subheader("Korelasi antar Fitur")
@@ -65,25 +97,7 @@ with tab2:
         sns.heatmap(df.corr(numeric_only=True), annot=True, cmap="coolwarm", ax=ax2)
         st.pyplot(fig2)
     else:
-        st.warning("Silakan upload dataset terlebih dahulu.")
-
-# Tab 3 - Model
-with tab3:
-    st.header("🤖 Performa Model")
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.subheader("📌 XGBoost")
-        st.metric("MAPE", "7.52%")
-        st.metric("RMSE", "1250.45")
-
-    with col2:
-        st.subheader("📌 XGBoost + Optuna")
-        st.metric("MAPE", "6.15%")
-        st.metric("RMSE", "1078.32")
-
-    st.success("Model dengan performa terbaik: **XGBoost + Optuna** (MAPE & RMSE lebih rendah)")
+        st.warning("Silakan lakukan preprocessing terlebih dahulu.")
 
 # Tab 4 - Hasil Prediksi
 with tab4:
