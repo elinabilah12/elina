@@ -19,14 +19,35 @@ tab1, tab2, tab3, tab4 = st.tabs(["📂 Dataset", "📈 Visualisasi", "🤖 Mode
 # Tab 1 - Dataset
 with tab1:
     st.header("📂 Dataset")
-    uploaded_file = st.file_uploader("Upload Dataset CSV", type=["csv"])
-    if uploaded_file:
-        df = pd.read_csv(uploaded_file)
-        st.write("Data Preview:")
-        st.dataframe(df.head())
+    
+    required_columns = [
+        'harga_pakan_ternak_broiler',
+        'harga_DOC_broiler',
+        'harga_jagung_tk_peternak',
+        'harga_daging_ayam_broiler'
+    ]
 
-        with st.expander("📊 Deskripsi Statistik"):
-            st.write(df.describe())
+    uploaded_file = st.file_uploader("Upload Dataset Excel (.xlsx)", type=["xlsx"])
+
+    if uploaded_file:
+        try:
+            df = pd.read_excel(uploaded_file)
+            missing_cols = [col for col in required_columns if col not in df.columns]
+
+            if missing_cols:
+                st.error(f"❌ Kolom berikut tidak ditemukan di file Excel: {', '.join(missing_cols)}")
+            else:
+                st.success("✅ Dataset valid!")
+                st.write("Data Preview:")
+                st.dataframe(df.head())
+
+                with st.expander("📊 Deskripsi Statistik"):
+                    st.write(df.describe())
+
+        except Exception as e:
+            st.error(f"❌ Gagal membaca file Excel. Pastikan formatnya benar. Error: {e}")
+    else:
+        st.info("Silakan upload file Excel (.xlsx) yang berisi semua variabel yang dibutuhkan.")
 
 # Tab 2 - Visualisasi
 with tab2:
