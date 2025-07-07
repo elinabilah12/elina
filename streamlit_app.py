@@ -59,26 +59,73 @@ with tab1:
         st.info("Silakan upload file Excel (.xlsx) yang berisi semua variabel yang dibutuhkan.")
 
 # Tab 2 - Preprocessing
+# Tab 2 - Preprocessing
 with tab2:
     st.header("⚙️ Preprocessing Data")
 
     if 'df' in st.session_state:
         df = st.session_state['df'].copy()
 
-        st.subheader("🔠 Normalisasi Nama Kolom")
+        st.subheader("1️⃣ Normalisasi Nama Kolom")
         df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
         st.write("Kolom setelah dinormalisasi:")
         st.write(df.columns.tolist())
 
-        st.subheader("🧼 Cek Missing Values")
-        st.write(df.isnull().sum())
+        # Rename untuk kemudahan akses kolom
+        df.rename(columns={
+            'harga_pakan_ternak_broiler': 'pakan',
+            'harga_doc_broiler': 'doc',
+            'harga_jagung_tk_peternak': 'jagung',
+            'harga_daging_ayam_broiler': 'daging',
+            'date': 'tanggal'
+        }, inplace=True)
 
-        st.subheader("🧮 Statistik Ringkas")
-        st.write(df.describe())
+        st.subheader("2️⃣ Penanganan Missing Values (Interpolasi + Fill)")
+        kolom_target = ['pakan', 'doc', 'jagung', 'daging']
+        df[kolom_target] = df[kolom_target].interpolate(method='linear')
+        for col in kolom_target:
+            df[col].fillna(method='ffill', inplace=True)
+            df[col].fillna(method='bfill', inplace=True)
 
-        st.session_state['df_clean'] = df  # Simpan versi yang sudah diproses
+        st.write("Jumlah missing value setelah penanganan:")
+        st.dataframe(df.isna().sum())
+
+        st.subheader("3️⃣ Deteksi Outlier dengan IQR")
+        Q1 = df[kolom_target].quantile(0.25)
+        Q3 = df[kolom_target].quantile(0.75)
+        IQR = Q3 - Q1
+
+        outliers = (df[kolom_target] < (Q1 - 1.5 * IQR)) | (df[kolom_target] > (Q3 + 1.5 * IQR))
+        st.write("Jumlah outlier per kolom:")
+        st.dataframe(outliers.sum())
+
+        fig_outlier, ax_outlier = plt.subplots(figsize=(10, 5))
+        sns.boxplot(data=df[kolom_target], orient='h', palette='Set2', ax=ax_outlier)
+        ax_outlier.set_title("Boxplot Deteksi Outlier (IQR)")
+        st.pyplot(fig_outlier)
+
+        st.subheader("4️⃣ Transformasi Data (Log Transform)")
+        for col in kolom_target:
+            df[f"{col}_log"] = np.log(df[col])
+
+        log_cols = [f"{col}_log" for col in kolom_target]
+        st.write("Preview Kolom Log:")
+        st.dataframe(df[log_cols].head())
+
+        fig_log, axs = plt.subplots(2, 2, figsize=(12, 8))
+        axs = axs.flatten()
+        for i, col in enumerate(log_cols):
+            sns.histplot(df[col], kde=True, color='skyblue', ax=axs[i])
+            axs[i].set_title(f'Distribusi Log: {col}')
+            axs[i].set_xlabel('Nilai Log')
+        plt.tight_layout()
+        st.pyplot(fig_log)
+
+        # Simpan hasil preprocessing ke session
+        st.session_state['df_clean'] = df
+
     else:
-        st.warning("Upload dataset terlebih dahulu di tab 📂 Dataset.")
+        st.warning("Silakan upload dataset terlebih dahulu di tab 📂 Dataset.")
 
 # Tab 3 - Visualisasi
 with tab3:
