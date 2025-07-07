@@ -39,16 +39,6 @@ with tab1:
                 st.error(f"❌ Kolom berikut tidak ditemukan di file Excel: {', '.join(missing_cols)}")
             else:
                 st.success("✅ Dataset valid!")
-                st.write("Data Preview:")
-                st.dataframe(df.head())
-
-                with st.expander("📊 Deskripsi Statistik"):
-                    st.write(df.describe())
-
-        except Exception as e:
-            st.error(f"❌ Gagal membaca file Excel. Pastikan formatnya benar. Error: {e}")
-    else:
-        st.info("Silakan upload file Excel (.xlsx) yang berisi semua variabel yang dibutuhkan.")
 
 # Tab 2 - Visualisasi
 with tab2:
