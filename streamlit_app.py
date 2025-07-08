@@ -15,7 +15,7 @@ import json
 # Konfigurasi halaman
 st.set_page_config(
     page_title="Prediksi Harga Daging Ayam Broiler - Jawa Timur",
-    page_icon="🍗",
+    page_icon="🍩",
     layout="wide"
 )
 
