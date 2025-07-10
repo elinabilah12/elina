@@ -337,8 +337,11 @@ elif menu == "🤖 Model":
 elif menu == "📉 Hasil Prediksi":
     st.header("📉 Hasil Prediksi")
 
-    if 'df_clean' in st.session_state and 'best_model' in locals():
+    if 'df_clean' in st.session_state and 'best_model' in st.session_state:
         df = st.session_state['df_clean']
+        best_model = st.session_state['best_model']
+        df['tanggal'] = pd.to_datetime(df['tanggal'])  # Pastikan format datetime
+
         df_pred = df.copy()
 
         # Buat dummy prediksi (misal hasil model sebelumnya)
@@ -358,7 +361,7 @@ elif menu == "📉 Hasil Prediksi":
 
         st.subheader("🔮 Prediksi 14 Hari ke Depan")
 
-        # Prediksi 14 hari ke depan dengan model terbaik
+        # Prediksi 14 hari ke depan
         n_lags = 7
         harga_series = df['daging'].copy()
         df_lag = harga_series.to_frame(name='harga')
@@ -377,7 +380,6 @@ elif menu == "📉 Hasil Prediksi":
         X_train_scaled_lag = scaler_lag.fit_transform(X_train_lag)
         X_test_scaled_lag = scaler_lag.transform(X_test_lag)
 
-        # Latih model dengan parameter hasil tuning Optuna
         best_model.fit(X_train_scaled_lag, y_train_lag)
 
         # Mulai prediksi 14 hari ke depan
@@ -415,3 +417,4 @@ elif menu == "📉 Hasil Prediksi":
 
     else:
         st.warning("Lakukan preprocessing dan pelatihan model terlebih dahulu.")
+
