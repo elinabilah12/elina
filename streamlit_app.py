@@ -39,8 +39,32 @@ if menu == "🏠 Beranda":
     🔍 Anda dapat menavigasi melalui sidebar untuk melihat dataset, preprocessing, visualisasi data, pemodelan, dan hasil prediksi.
     """)
 
+# Inisialisasi session state
+if 'menu' not in st.session_state:
+    st.session_state['menu'] = "🏠 Beranda"
+
+# Navigasi berdasarkan session state
+menu = st.session_state['menu']
+
+# Halaman Beranda
+if menu == "🏠 Beranda":
+    st.title("🏠 Beranda")
+    st.write("Selamat datang di aplikasi prediksi harga ayam broiler di Jawa Timur!")
+
     if st.button("➡️ Lanjut ke Dataset"):
         st.session_state['menu'] = "📂 Dataset"
+        st.experimental_rerun()  # rerun agar langsung pindah halaman
+
+# Halaman Dataset
+elif menu == "📂 Dataset":
+    st.title("📂 Dataset")
+    st.write("Ini adalah halaman untuk menampilkan dataset yang digunakan.")
+    
+    # Tombol kembali ke beranda
+    if st.button("⬅️ Kembali ke Beranda"):
+        st.session_state['menu'] = "🏠 Beranda"
+        st.experimental_rerun()
+
 
 # ================ MENU: DATASET ======================
 elif menu == "📂 Dataset":
