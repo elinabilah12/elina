@@ -104,24 +104,32 @@ elif menu == "📂 Dataset":
                 if 'Date' in df.columns:
                     df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
 
-                # Tampilkan deskripsi statistik hanya untuk kolom numerik
-                st.subheader("📊 Deskripsi Statistik (Numerik)")
+                # Ambil statistik numerik
+                st.subheader("📊 Deskripsi Statistik")
                 numeric_cols = df.select_dtypes(include=['number']).columns
-                st.dataframe(df[numeric_cols].describe().T)
+                stats_df = df[numeric_cols].describe().T
 
-                # Statistik untuk kolom tanggal
+                # Statistik manual untuk kolom tanggal
                 if 'Date' in df.columns:
-                    st.subheader("🗓️ Statistik Kolom Tanggal")
-                    date_stats = {
-                        'count': df['Date'].count(),
-                        'mean': df['Date'].mean(),
-                        'min': df['Date'].min(),
-                        '25%': df['Date'].quantile(0.25),
-                        '50%': df['Date'].quantile(0.5),
-                        '75%': df['Date'].quantile(0.75),
-                        'max': df['Date'].max()
-                    }
-                    st.dataframe(pd.DataFrame(date_stats, index=['Date']).T)
+                    valid_dates = df['Date'].dropna()
+                    if not valid_dates.empty:
+                        date_stats = {
+                            'count': valid_dates.count(),
+                            'mean': valid_dates.mean(),
+                            'min': valid_dates.min(),
+                            '25%': valid_dates.quantile(0.25),
+                            '50%': valid_dates.median(),
+                            '75%': valid_dates.quantile(0.75),
+                            'max': valid_dates.max()
+                        }
+                        date_stats_df = pd.DataFrame(date_stats, index=['Date'])
+                        # Gabungkan ke stats_df
+                        combined_stats = pd.concat([stats_df, date_stats_df])
+                        st.dataframe(combined_stats)
+                    else:
+                        st.warning("Tidak ada data tanggal yang valid.")
+                else:
+                    st.dataframe(stats_df)
 
         except Exception as e:
             st.error(f"Gagal membaca file: {e}")
