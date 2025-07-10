@@ -102,18 +102,16 @@ elif menu == "📂 Dataset":
                 # Konversi kolom tanggal
                 df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
 
-                # Bersihkan dan konversi kolom harga
+                # Bersihkan dan konversi kolom harga (format lokal)
                 harga_cols = [
                     'Harga Pakan Ternak Broiler', 'Harga DOC Broiler',
                     'Harga Jagung TK Peternak', 'Harga Daging Ayam Broiler'
                 ]
                 for col in harga_cols:
-                    df[col] = (
-                        df[col].astype(str)
-                        .str.replace('.', '', regex=False)    # Hapus titik ribuan
-                        .str.replace(',', '.', regex=False)   # Ganti koma jadi titik desimal
-                    )
-                    df[col] = pd.to_numeric(df[col], errors='coerce')  # Konversi ke float
+                    df[col] = df[col].astype(str).str.replace('.', '', regex=False)  # hapus titik ribuan
+                    df[col] = df[col].str.replace(',', '.', regex=False)  # koma ke titik
+                    df[col] = df[col].str.extract(r'(\d+\.?\d*)')[0]  # ambil angka valid
+                    df[col] = pd.to_numeric(df[col], errors='coerce')
 
                 # Statistik numerik
                 st.subheader("📊 Deskripsi Statistik")
@@ -132,7 +130,7 @@ elif menu == "📂 Dataset":
                         'max': [valid_dates.max()]
                     }, index=['Date'])
 
-                    # Gabungkan semua statistik
+                    # Gabungkan statistik
                     combined_stats = pd.concat([numeric_stats, date_stats])
                     st.dataframe(combined_stats)
                 else:
