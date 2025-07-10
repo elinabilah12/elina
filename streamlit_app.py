@@ -63,7 +63,7 @@ menu = st.sidebar.radio(
 
 # ================ MENU: BERANDA ======================
 if menu == "🏠 Beranda":
-    st.header("🏠 Selamat Datang")
+    st.header("🏠 Hai 👋Selamat Datang")
     st.markdown("""
     Selamat datang di **Dashboard Prediksi Harga Daging Ayam Broiler di Jawa Timur**.  
     Dashboard ini memanfaatkan model **XGBoost** dan **XGBoost dengan Optimasi Optuna** untuk memprediksi harga daging ayam broiler berdasarkan harga-harga komoditas pendukung seperti:
