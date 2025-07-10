@@ -249,26 +249,28 @@ elif menu == "🤖 Model":
         df['lag2_daging'] = df['daging'].shift(2)
         df['pct_change_daging'] = df['daging'].pct_change()
 
-        df.dropna(inplace=True)  # Hapus baris dengan NaN akibat rolling/lag
+        df.dropna(inplace=True)
 
         fitur = [
             'rasio_pakan_daging', 'rasio_doc_daging', 'rasio_jagung_pakan',
             'ma7_daging', 'ma7_pakan', 'ma7_doc', 'ma7_jagung',
-            'lag1_daging', 'lag2_daging', 'pct_change_daging']
+            'lag1_daging', 'lag2_daging', 'pct_change_daging'
+        ]
         target = 'daging'
 
         X = df[fitur]
         y = df[target]
 
-        # Split tanpa shuffle untuk data time series
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, shuffle=False
-        )
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=False)
 
-        # Standardisasi
         scaler = StandardScaler()
         X_train_scaled = scaler.fit_transform(X_train)
         X_test_scaled = scaler.transform(X_test)
+
+        def evaluate_model(y_true, y_pred):
+            rmse = np.sqrt(mean_squared_error(y_true, y_pred))
+            mape = mean_absolute_percentage_error(y_true, y_pred) * 100
+            return rmse, mape
 
         # ========================
         # MODEL DEFAULT
@@ -276,9 +278,7 @@ elif menu == "🤖 Model":
         model_default = XGBRegressor(random_state=42)
         model_default.fit(X_train_scaled, y_train)
         y_pred_default = model_default.predict(X_test_scaled)
-
-        rmse_default = np.sqrt(mean_squared_error(y_test, y_pred_default))
-        mape_default = mean_absolute_percentage_error(y_test, y_pred_default) * 100
+        rmse_default, mape_default = evaluate_model(y_test, y_pred_default)
 
         # ========================
         # MODEL OPTUNA (TUNED)
@@ -313,13 +313,8 @@ elif menu == "🤖 Model":
             best_model = XGBRegressor(**study.best_params, random_state=42)
             best_model.fit(X_train_scaled, y_train)
             y_pred_best = best_model.predict(X_test_scaled)
+            rmse_best, mape_best = evaluate_model(y_test, y_pred_best)
 
-            rmse_best = np.sqrt(mean_squared_error(y_test, y_pred_best))
-            mape_best = mean_absolute_percentage_error(y_test, y_pred_best) * 100
-
-        # ========================
-        # OUTPUT HASIL
-        # ========================
         st.success("✅ Model selesai ditraining dan dituning.")
 
         st.markdown("### 📈 Perbandingan Performa Model")
@@ -330,7 +325,6 @@ elif menu == "🤖 Model":
         | **XGBoost + Optuna** | {rmse_best:.2f} | {mape_best:.2f}% |
         """)
 
-        # Tampilkan prediksi dan nilai aktual
         hasil_df = pd.DataFrame({
             'Tanggal': df.iloc[y_test.index]['Date'].values if 'Date' in df.columns else range(len(y_test)),
             'Aktual': y_test.values,
@@ -343,24 +337,87 @@ elif menu == "🤖 Model":
 
     else:
         st.warning("Silakan lakukan preprocessing terlebih dahulu.")
-        
+
 
 # ================ MENU: HASIL PREDIKSI ================
 elif menu == "📉 Hasil Prediksi":
     st.header("📉 Hasil Prediksi")
 
-    if 'df_clean' in st.session_state:
+    if 'df_clean' in st.session_state and 'best_model' in locals():
         df = st.session_state['df_clean']
         df_pred = df.copy()
+
+        # Buat dummy prediksi (misal hasil model sebelumnya)
         df_pred['pred_xgb'] = df['daging'] * 0.95
         df_pred['pred_optuna'] = df['daging'] * 0.97
 
+        # Visualisasi hasil aktual vs prediksi
         fig, ax = plt.subplots(figsize=(10, 5))
         ax.plot(df['tanggal'], df['daging'], label='Aktual', linewidth=2)
         ax.plot(df['tanggal'], df_pred['pred_xgb'], label='Prediksi XGBoost', linestyle='--')
         ax.plot(df['tanggal'], df_pred['pred_optuna'], label='XGBoost + Optuna', linestyle='--')
-        ax.set_title("Perbandingan Harga Aktual vs Prediksi")
+        ax.set_title("📊 Perbandingan Harga Aktual vs Prediksi")
+        ax.set_xlabel("Tanggal")
+        ax.set_ylabel("Harga (Rp)")
         ax.legend()
         st.pyplot(fig)
+
+        st.subheader("🔮 Prediksi 14 Hari ke Depan")
+
+        # Prediksi 14 hari ke depan dengan model terbaik
+        n_lags = 7
+        harga_series = df['daging'].copy()
+        df_lag = harga_series.to_frame(name='harga')
+
+        for i in range(1, n_lags + 1):
+            df_lag[f'lag_{i}'] = df_lag['harga'].shift(i)
+
+        df_lag.dropna(inplace=True)
+
+        X_lag = df_lag[[f'lag_{i}' for i in range(1, n_lags + 1)]]
+        y_lag = df_lag['harga']
+
+        X_train_lag, X_test_lag, y_train_lag, y_test_lag = train_test_split(X_lag, y_lag, test_size=0.2, shuffle=False)
+
+        scaler_lag = StandardScaler()
+        X_train_scaled_lag = scaler_lag.fit_transform(X_train_lag)
+        X_test_scaled_lag = scaler_lag.transform(X_test_lag)
+
+        # Latih model dengan parameter hasil tuning Optuna
+        best_model.fit(X_train_scaled_lag, y_train_lag)
+
+        # Mulai prediksi 14 hari ke depan
+        last_known = harga_series.iloc[-n_lags:].tolist()
+        future_preds = []
+
+        for _ in range(14):
+            input_lags = pd.DataFrame([last_known[-n_lags:]], columns=[f'lag_{i}' for i in range(1, n_lags + 1)])
+            input_scaled = scaler_lag.transform(input_lags)
+            next_pred = best_model.predict(input_scaled)[0]
+            next_pred = round(float(next_pred), 2)
+            future_preds.append(next_pred)
+            last_known.append(next_pred)
+
+        # Tampilkan hasil prediksi
+        today = pd.to_datetime(df['tanggal'].iloc[-1])
+        future_dates = [today + pd.Timedelta(days=i) for i in range(1, 15)]
+
+        pred_14hari_df = pd.DataFrame({
+            'Tanggal': future_dates,
+            'Prediksi Harga Daging Ayam (Rp)': future_preds
+        })
+
+        st.dataframe(pred_14hari_df)
+
+        # Visualisasi prediksi ke depan
+        fig2, ax2 = plt.subplots(figsize=(10, 5))
+        ax2.plot(df['tanggal'], df['daging'], label='Aktual', linewidth=2)
+        ax2.plot(future_dates, future_preds, label='Prediksi 14 Hari ke Depan', linestyle='--', color='orange')
+        ax2.set_title("📈 Prediksi Harga Daging Ayam 14 Hari ke Depan")
+        ax2.set_xlabel("Tanggal")
+        ax2.set_ylabel("Harga (Rp)")
+        ax2.legend()
+        st.pyplot(fig2)
+
     else:
-        st.warning("Lakukan preprocessing terlebih dahulu.")
+        st.warning("Lakukan preprocessing dan pelatihan model terlebih dahulu.")
