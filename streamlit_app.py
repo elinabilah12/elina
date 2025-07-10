@@ -40,7 +40,7 @@ if menu == "🏠 Beranda":
     """)
 
     if st.button("➡️ Lanjut ke Dataset"):
-        st.session_state['menu'] = "📂 Dataset"
+        st.session_state['menu'] = "📂 Datase"
 
 # ================ MENU: DATASET ======================
 elif menu == "📂 Dataset":
