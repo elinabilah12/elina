@@ -235,8 +235,9 @@ elif menu == "🤖 Model":
     st.header("🤖 Model")
 
     if 'df_clean' in st.session_state:
-        df = st.session_state['df_clean']
+        df = st.session_state['df_clean'].copy()
 
+        # Buat fitur baru
         df['rasio_pakan_daging'] = df['pakan'] / df['daging']
         df['rasio_doc_daging'] = df['doc'] / df['daging']
         df['rasio_jagung_pakan'] = df['jagung'] / df['pakan']
@@ -247,7 +248,8 @@ elif menu == "🤖 Model":
         df['lag1_daging'] = df['daging'].shift(1)
         df['lag2_daging'] = df['daging'].shift(2)
         df['pct_change_daging'] = df['daging'].pct_change()
-        df.dropna(inplace=True)
+
+        df.dropna(inplace=True)  # Hapus baris dengan NaN akibat rolling/lag
 
         fitur = [
             'rasio_pakan_daging', 'rasio_doc_daging', 'rasio_jagung_pakan',
@@ -257,19 +259,32 @@ elif menu == "🤖 Model":
 
         X = df[fitur]
         y = df[target]
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=False)
 
+        # Split tanpa shuffle untuk data time series
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, shuffle=False
+        )
+
+        # Standardisasi
         scaler = StandardScaler()
         X_train_scaled = scaler.fit_transform(X_train)
         X_test_scaled = scaler.transform(X_test)
 
+        # ========================
+        # MODEL DEFAULT
+        # ========================
         model_default = XGBRegressor(random_state=42)
         model_default.fit(X_train_scaled, y_train)
         y_pred_default = model_default.predict(X_test_scaled)
+
         rmse_default = np.sqrt(mean_squared_error(y_test, y_pred_default))
         mape_default = mean_absolute_percentage_error(y_test, y_pred_default) * 100
 
+        # ========================
+        # MODEL OPTUNA (TUNED)
+        # ========================
         with st.spinner("⚙ Menjalankan tuning Optuna..."):
+
             def objective(trial):
                 params = {
                     'n_estimators': trial.suggest_int('n_estimators', 100, 300),
@@ -288,7 +303,11 @@ elif menu == "🤖 Model":
                 preds = model.predict(X_test_scaled)
                 return np.sqrt(mean_squared_error(y_test, preds))
 
-            study = optuna.create_study(direction='minimize', sampler=TPESampler(seed=42), pruner=MedianPruner(n_warmup_steps=5))
+            study = optuna.create_study(
+                direction='minimize',
+                sampler=TPESampler(seed=42),
+                pruner=MedianPruner(n_warmup_steps=5)
+            )
             study.optimize(objective, n_trials=10)
 
             best_model = XGBRegressor(**study.best_params, random_state=42)
@@ -298,14 +317,33 @@ elif menu == "🤖 Model":
             rmse_best = np.sqrt(mean_squared_error(y_test, y_pred_best))
             mape_best = mean_absolute_percentage_error(y_test, y_pred_best) * 100
 
+        # ========================
+        # OUTPUT HASIL
+        # ========================
         st.success("✅ Model selesai ditraining dan dituning.")
-        st.code(f"""
-=== PERBANDINGAN XGBOOST DEFAULT vs TUNED (OPTUNA) ===
-[DEFAULT] RMSE: {rmse_default:.2f}, MAPE: {mape_default:.2f}%
-[TUNED  ] RMSE: {rmse_best:.2f}, MAPE: {mape_best:.2f}%
-""")
+
+        st.markdown("### 📈 Perbandingan Performa Model")
+        st.markdown(f"""
+        | Model               | RMSE     | MAPE    |
+        |----------------------|----------|---------|
+        | **XGBoost Default**  | {rmse_default:.2f} | {mape_default:.2f}% |
+        | **XGBoost + Optuna** | {rmse_best:.2f} | {mape_best:.2f}% |
+        """)
+
+        # Tampilkan prediksi dan nilai aktual
+        hasil_df = pd.DataFrame({
+            'Tanggal': df.iloc[y_test.index]['Date'].values if 'Date' in df.columns else range(len(y_test)),
+            'Aktual': y_test.values,
+            'Prediksi Default': y_pred_default,
+            'Prediksi Tuned': y_pred_best
+        }).reset_index(drop=True)
+
+        st.subheader("📊 Hasil Prediksi vs Aktual")
+        st.dataframe(hasil_df.head(10))
+
     else:
         st.warning("Silakan lakukan preprocessing terlebih dahulu.")
+        
 
 # ================ MENU: HASIL PREDIKSI ================
 elif menu == "📉 Hasil Prediksi":
