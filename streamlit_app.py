@@ -23,11 +23,27 @@ st.title("📊 Prediksi Harga Daging Ayam Broiler - Jawa Timur")
 # ================ SIDEBAR NAVIGATION =================
 menu = st.sidebar.radio(
     "Navigasi",
-    ["📂 Dataset", "⚙ Preprocessing", "📈 Visualisasi", "🤖 Model", "📉 Hasil Prediksi"]
+    ["🏠 Beranda", "📂 Dataset", "⚙ Preprocessing", "📈 Visualisasi", "🤖 Model", "📉 Hasil Prediksi"]
 )
 
+# ================ MENU: BERANDA ======================
+if menu == "🏠 Beranda":
+    st.header("🏠 Selamat Datang")
+    st.markdown("""
+    Selamat datang di **Dashboard Prediksi Harga Daging Ayam Broiler di Jawa Timur**.  
+    Dashboard ini memanfaatkan model **XGBoost** dan **XGBoost dengan Optimasi Optuna** untuk memprediksi harga daging ayam broiler berdasarkan harga-harga komoditas pendukung seperti:
+    - Harga Pakan Ternak Broiler
+    - Harga DOC Broiler
+    - Harga Jagung
+
+    🔍 Anda dapat menavigasi melalui sidebar untuk melihat dataset, preprocessing, visualisasi data, pemodelan, dan hasil prediksi.
+    """)
+
+    if st.button("➡️ Lanjut ke Dataset"):
+        st.session_state['menu'] = "📂 Dataset"
+
 # ================ MENU: DATASET ======================
-if menu == "📂 Dataset":
+elif menu == "📂 Dataset":
     st.header("📂 Dataset")
 
     required_columns = [
