@@ -11,24 +11,23 @@ import optuna
 from optuna.samplers import TPESampler
 from optuna.pruners import MedianPruner
 
+# ================== CONFIG ==================
 st.set_page_config(
     page_title="Prediksi Harga Daging Ayam Broiler - Jawa Timur",
     page_icon="🍗",
     layout="wide"
 )
 
-st.title("📊 Dashboard Prediksi Harga Daging Ayam Broiler - Jawa Timur")
+st.title("📊 Prediksi Harga Daging Ayam Broiler - Jawa Timur")
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "📂 Dataset", 
-    "⚙ Preprocessing", 
-    "📈 Visualisasi", 
-    "🤖 Model", 
-    "📉 Hasil Prediksi"
-])
+# ================ SIDEBAR NAVIGATION =================
+menu = st.sidebar.radio(
+    "Navigasi",
+    ["📂 Dataset", "⚙ Preprocessing", "📈 Visualisasi", "🤖 Model", "📉 Hasil Prediksi"]
+)
 
-# ======================== TAB 1 ========================
-with tab1:
+# ================ MENU: DATASET ======================
+if menu == "📂 Dataset":
     st.header("📂 Dataset")
 
     required_columns = [
@@ -41,18 +40,15 @@ with tab1:
     if uploaded_file:
         try:
             df = pd.read_excel(uploaded_file)
-
-            # Cek apakah semua kolom penting tersedia
             missing_cols = [col for col in required_columns if col not in df.columns]
             if missing_cols:
                 st.error(f"Kolom tidak ditemukan: {', '.join(missing_cols)}")
             else:
                 st.session_state['df'] = df.copy()
-                st.success("✅ Dataset valid! Lanjut ke tab preprocessing.")
+                st.success("✅ Dataset valid! Lanjut ke preprocessing.")
                 st.dataframe(df.head())
 
                 st.subheader("📊 Deskripsi Statistik")
-                # Gabungkan deskripsi statistik numerik dan datetime manual
                 desc = df.describe(include='all').T
                 if 'Date' in df.columns:
                     df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
@@ -73,8 +69,8 @@ with tab1:
         if 'df' not in st.session_state:
             st.info("Silakan upload dataset terlebih dahulu.")
 
-# ======================== TAB 2 ========================
-with tab2:
+# ================ MENU: PREPROCESSING =================
+elif menu == "⚙ Preprocessing":
     st.header("⚙ Preprocessing Data")
 
     if 'df' in st.session_state:
@@ -90,22 +86,18 @@ with tab2:
 
         kolom_target = ['pakan', 'doc', 'jagung', 'daging']
 
-        # ✅ Bersihkan koma dan konversi angka
         for col in kolom_target:
             df[col] = df[col].astype(str).str.replace(",", "").str.strip()
             df[col] = pd.to_numeric(df[col], errors='coerce')
 
-        # Konversi tanggal jika belum
         df['tanggal'] = pd.to_datetime(df['tanggal'], errors='coerce')
 
         st.subheader("2️⃣ Penanganan Missing Value")
         missing_before = df[kolom_target].isna().sum()
-
         df[kolom_target] = df[kolom_target].interpolate(method='linear')
         for col in kolom_target:
             df[col] = df[col].fillna(method='ffill')
             df[col] = df[col].fillna(method='bfill')
-
         missing_after = df[kolom_target].isna().sum()
         st.dataframe(pd.DataFrame({"Sebelum": missing_before, "Sesudah": missing_after}))
 
@@ -123,8 +115,6 @@ with tab2:
         st.subheader("4️⃣ Transformasi Log")
         for col in kolom_target:
             df[f"{col}_log"] = np.log(df[col])
-
-        st.write("Contoh hasil log transform:")
         st.dataframe(df[[f"{col}_log" for col in kolom_target]].head())
 
         fig_log, axs = plt.subplots(2, 2, figsize=(12, 8))
@@ -136,15 +126,12 @@ with tab2:
         st.pyplot(fig_log)
 
         st.session_state['df_clean'] = df
-        st.success("✅ Preprocessing selesai. Lanjut ke tab visualisasi atau model.")
+        st.success("✅ Preprocessing selesai.")
     else:
-        st.warning("⚠ Silakan upload dataset terlebih dahulu di tab 📂 Dataset.")
+        st.warning("⚠ Silakan upload dataset terlebih dahulu.")
 
-
-
-
-# TAB 3 - Visualisasi
-with tab3:
+# ================ MENU: VISUALISASI ===================
+elif menu == "📈 Visualisasi":
     st.header("📈 Visualisasi Dataset")
 
     if 'df_clean' in st.session_state:
@@ -170,8 +157,8 @@ with tab3:
     else:
         st.warning("Lakukan preprocessing terlebih dahulu.")
 
-# TAB 4 - Model
-with tab4:
+# ================ MENU: MODEL =========================
+elif menu == "🤖 Model":
     st.header("🤖 Model")
 
     if 'df_clean' in st.session_state:
@@ -210,7 +197,6 @@ with tab4:
         mape_default = mean_absolute_percentage_error(y_test, y_pred_default) * 100
 
         with st.spinner("⚙ Menjalankan tuning Optuna..."):
-
             def objective(trial):
                 params = {
                     'n_estimators': trial.suggest_int('n_estimators', 100, 300),
@@ -248,8 +234,8 @@ with tab4:
     else:
         st.warning("Silakan lakukan preprocessing terlebih dahulu.")
 
-# TAB 5 - Prediksi
-with tab5:
+# ================ MENU: HASIL PREDIKSI ================
+elif menu == "📉 Hasil Prediksi":
     st.header("📉 Hasil Prediksi")
 
     if 'df_clean' in st.session_state:
