@@ -104,6 +104,14 @@ elif menu == "📂 Dataset":
                 if 'Date' in df.columns:
                     df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
 
+                # Konversi semua kolom harga ke numerik
+                harga_cols = [
+                    'Harga Pakan Ternak Broiler', 'Harga DOC Broiler',
+                    'Harga Jagung TK Peternak', 'Harga Daging Ayam Broiler'
+                ]
+                for col in harga_cols:
+                    df[col] = pd.to_numeric(df[col], errors='coerce')
+
                 # Ambil statistik numerik
                 st.subheader("📊 Deskripsi Statistik")
                 numeric_cols = df.select_dtypes(include=['number']).columns
