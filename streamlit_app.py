@@ -20,6 +20,38 @@ st.set_page_config(
 
 st.title("📊 Prediksi Harga Daging Ayam Broiler - Jawa Timur")
 
+# CSS untuk tampilan nuansa hijau
+green_css = """
+<style>
+/* Warna background utama */
+body {
+    background-color: #eaf8f0;
+}
+
+/* Header utama */
+h1, h2, h3, h4 {
+    color: #206a5d;
+}
+
+/* Sidebar */
+section[data-testid="stSidebar"] {
+    background-color: #c8f2dc;
+}
+
+/* Tombol */
+button {
+    background-color: #4caf50 !important;
+    color: white !important;
+}
+
+/* Text biasa */
+p, div, span {
+    color: #2c5f4a;
+}
+</style>
+"""
+st.markdown(green_css, unsafe_allow_html=True)
+
 # ================ SIDEBAR NAVIGATION =================
 menu = st.sidebar.radio(
     "Navigasi",
