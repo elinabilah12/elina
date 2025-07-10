@@ -76,23 +76,59 @@ if menu == "🏠 Beranda":
 
 
 # ================ MENU: DATASET ======================
-st.subheader("📊 Deskripsi Statistik Numerik")
-numeric_cols = df.select_dtypes(include=['number']).columns
-st.dataframe(df[numeric_cols].describe().T)
+elif menu == "📂 Dataset":
+    st.header("📂 Dataset")
 
-if 'Date' in df.columns:
-    df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
-    st.subheader("🗓️ Statistik Kolom Tanggal")
-    date_stats = {
-        'count': df['Date'].count(),
-        'mean': df['Date'].mean(),
-        'min': df['Date'].min(),
-        '25%': df['Date'].quantile(0.25),
-        '50%': df['Date'].quantile(0.5),
-        '75%': df['Date'].quantile(0.75),
-        'max': df['Date'].max()
-    }
-    st.write(pd.DataFrame(date_stats, index=['Date']).T)
+    required_columns = [
+        'Date', 'Harga Pakan Ternak Broiler', 'Harga DOC Broiler',
+        'Harga Jagung TK Peternak', 'Harga Daging Ayam Broiler'
+    ]
+
+    uploaded_file = st.file_uploader("Upload Dataset Excel (.xlsx)", type=["xlsx"])
+
+    if uploaded_file:
+        try:
+            df = pd.read_excel(uploaded_file)
+
+            # Cek kolom yang dibutuhkan
+            missing_cols = [col for col in required_columns if col not in df.columns]
+            if missing_cols:
+                st.error(f"Kolom tidak ditemukan: {', '.join(missing_cols)}")
+            else:
+                # Simpan ke session
+                st.session_state['df'] = df.copy()
+                st.success("✅ Dataset valid! Lanjut ke preprocessing.")
+                st.dataframe(df.head())
+
+                # Ubah kolom 'Date' jadi datetime
+                if 'Date' in df.columns:
+                    df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
+
+                # Tampilkan deskripsi statistik hanya untuk kolom numerik
+                st.subheader("📊 Deskripsi Statistik (Numerik)")
+                numeric_cols = df.select_dtypes(include=['number']).columns
+                st.dataframe(df[numeric_cols].describe().T)
+
+                # Statistik untuk kolom tanggal
+                if 'Date' in df.columns:
+                    st.subheader("🗓️ Statistik Kolom Tanggal")
+                    date_stats = {
+                        'count': df['Date'].count(),
+                        'mean': df['Date'].mean(),
+                        'min': df['Date'].min(),
+                        '25%': df['Date'].quantile(0.25),
+                        '50%': df['Date'].quantile(0.5),
+                        '75%': df['Date'].quantile(0.75),
+                        'max': df['Date'].max()
+                    }
+                    st.dataframe(pd.DataFrame(date_stats, index=['Date']).T)
+
+        except Exception as e:
+            st.error(f"Gagal membaca file: {e}")
+    else:
+        if 'df' not in st.session_state:
+            st.info("Silakan upload dataset terlebih dahulu.")
+
 
 # ================ MENU: PREPROCESSING =================
 elif menu == "⚙ Preprocessing":
