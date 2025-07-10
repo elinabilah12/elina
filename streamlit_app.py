@@ -162,7 +162,7 @@ elif menu == "📈 Visualisasi":
         sns.heatmap(df[log_cols].corr(), annot=True, cmap="coolwarm", ax=ax2)
         st.pyplot(fig2)
 
-        fig3, ax3 = plt.subplots(figsize=(5,2))
+        fig3, ax3 = plt.subplots(figsize=(10,5))
         ax3.plot(df['tanggal'], df['pakan'], label='Pakan')
         ax3.plot(df['tanggal'], df['doc'], label='DOC')
         ax3.plot(df['tanggal'], df['jagung'], label='Jagung')
