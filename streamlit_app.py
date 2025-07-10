@@ -53,7 +53,7 @@ if menu == "🏠 Beranda":
 
     if st.button("➡️ Lanjut ke Dataset"):
         st.session_state['menu'] = "📂 Dataset"
-        st.experimental_rerun()  # rerun agar langsung pindah halaman
+        st.rerun()  # Gunakan ini jika versi streamlit >= 1.25
 
 # Halaman Dataset
 elif menu == "📂 Dataset":
@@ -63,7 +63,7 @@ elif menu == "📂 Dataset":
     # Tombol kembali ke beranda
     if st.button("⬅️ Kembali ke Beranda"):
         st.session_state['menu'] = "🏠 Beranda"
-        st.experimental_rerun()
+        st.rerun()
 
 
 # ================ MENU: DATASET ======================
