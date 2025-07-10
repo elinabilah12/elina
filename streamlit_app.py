@@ -20,8 +20,8 @@ st.set_page_config(
 
 st.title("📊 Prediksi Harga Daging Ayam Broiler - Jawa Timur")
 
-# CSS untuk tampilan nuansa hijau
-green_css = """
+# CSS untuk tampilan nuansa biru
+blue_css = """
 <style>
 /* Warna background utama */
 body {
