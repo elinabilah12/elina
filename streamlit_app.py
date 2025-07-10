@@ -20,16 +20,16 @@ st.set_page_config(
 
 st.title("📊 Prediksi Harga Daging Ayam Broiler - Jawa Timur")
 
-# CSS untuk tampilan nuansa kuning
+# CSS untuk tampilan nuansa kuning (kompatibel Streamlit)
 yellow_css = """
 <style>
-/* Warna background utama */
-body {
+/* Background utama (konten) */
+[data-testid="stAppViewContainer"] {
     background-color: #fffde7;
 }
 
-/* Header utama */
-h1, h2, h3, h4 {
+/* Header teks (judul) */
+h1, h2, h3, h4, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
     color: #f9a825;
 }
 
@@ -38,14 +38,17 @@ section[data-testid="stSidebar"] {
     background-color: #fff8c6;
 }
 
-/* Tombol */
-button {
-    background-color: #fbc02d !important;
-    color: black !important;
+/* Tombol Streamlit */
+div.stButton > button {
+    background-color: #fbc02d;
+    color: black;
+    font-weight: bold;
+    border: none;
+    border-radius: 5px;
 }
 
-/* Text biasa */
-p, div, span {
+/* Teks biasa */
+.stTextInput > label, .stNumberInput > label, .stSelectbox > label, p, div, span {
     color: #6d4c00;
 }
 </style>
