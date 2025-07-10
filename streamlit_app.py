@@ -76,47 +76,23 @@ if menu == "🏠 Beranda":
 
 
 # ================ MENU: DATASET ======================
-elif menu == "📂 Dataset":
-    st.header("📂 Dataset")
+st.subheader("📊 Deskripsi Statistik Numerik")
+numeric_cols = df.select_dtypes(include=['number']).columns
+st.dataframe(df[numeric_cols].describe().T)
 
-    required_columns = [
-        'Date', 'Harga Pakan Ternak Broiler', 'Harga DOC Broiler',
-        'Harga Jagung TK Peternak', 'Harga Daging Ayam Broiler'
-    ]
-
-    uploaded_file = st.file_uploader("Upload Dataset Excel (.xlsx)", type=["xlsx"])
-
-    if uploaded_file:
-        try:
-            df = pd.read_excel(uploaded_file)
-            missing_cols = [col for col in required_columns if col not in df.columns]
-            if missing_cols:
-                st.error(f"Kolom tidak ditemukan: {', '.join(missing_cols)}")
-            else:
-                st.session_state['df'] = df.copy()
-                st.success("✅ Dataset valid! Lanjut ke preprocessing.")
-                st.dataframe(df.head())
-
-                st.subheader("📊 Deskripsi Statistik")
-                desc = df.describe(include='all').T
-                if 'Date' in df.columns:
-                    df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
-                    date_stats = {
-                        'count': df['Date'].count(),
-                        'mean': df['Date'].mean(),
-                        'min': df['Date'].min(),
-                        '25%': df['Date'].quantile(0.25),
-                        '50%': df['Date'].quantile(0.5),
-                        '75%': df['Date'].quantile(0.75),
-                        'max': df['Date'].max()
-                    }
-                    desc.loc['Date'] = date_stats
-                st.dataframe(desc)
-        except Exception as e:
-            st.error(f"Gagal membaca file: {e}")
-    else:
-        if 'df' not in st.session_state:
-            st.info("Silakan upload dataset terlebih dahulu.")
+if 'Date' in df.columns:
+    df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
+    st.subheader("🗓️ Statistik Kolom Tanggal")
+    date_stats = {
+        'count': df['Date'].count(),
+        'mean': df['Date'].mean(),
+        'min': df['Date'].min(),
+        '25%': df['Date'].quantile(0.25),
+        '50%': df['Date'].quantile(0.5),
+        '75%': df['Date'].quantile(0.75),
+        'max': df['Date'].max()
+    }
+    st.write(pd.DataFrame(date_stats, index=['Date']).T)
 
 # ================ MENU: PREPROCESSING =================
 elif menu == "⚙ Preprocessing":
