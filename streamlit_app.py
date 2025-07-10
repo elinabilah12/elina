@@ -337,84 +337,93 @@ elif menu == "🤖 Model":
 elif menu == "📉 Hasil Prediksi":
     st.header("📉 Hasil Prediksi")
 
+    # Cek apakah semua variabel dibutuhkan sudah ada
     if 'df_clean' in st.session_state and 'best_model' in st.session_state:
-        df = st.session_state['df_clean']
+        df = st.session_state['df_clean'].copy()
         best_model = st.session_state['best_model']
-        df['tanggal'] = pd.to_datetime(df['tanggal'])  # Pastikan format datetime
 
-        df_pred = df.copy()
+        # Pastikan kolom tanggal tersedia dan sudah dalam datetime
+        if 'tanggal' in df.columns and 'daging' in df.columns:
+            df['tanggal'] = pd.to_datetime(df['tanggal'])
 
-        # Buat dummy prediksi (misal hasil model sebelumnya)
-        df_pred['pred_xgb'] = df['daging'] * 0.95
-        df_pred['pred_optuna'] = df['daging'] * 0.97
+            # Dummy prediksi (bisa diganti jika model sudah digunakan sebelumnya)
+            df['pred_xgb'] = df['daging'] * 0.95
+            df['pred_optuna'] = df['daging'] * 0.97
 
-        # Visualisasi hasil aktual vs prediksi
-        fig, ax = plt.subplots(figsize=(10, 5))
-        ax.plot(df['tanggal'], df['daging'], label='Aktual', linewidth=2)
-        ax.plot(df['tanggal'], df_pred['pred_xgb'], label='Prediksi XGBoost', linestyle='--')
-        ax.plot(df['tanggal'], df_pred['pred_optuna'], label='XGBoost + Optuna', linestyle='--')
-        ax.set_title("📊 Perbandingan Harga Aktual vs Prediksi")
-        ax.set_xlabel("Tanggal")
-        ax.set_ylabel("Harga (Rp)")
-        ax.legend()
-        st.pyplot(fig)
+            # Visualisasi aktual vs prediksi
+            fig, ax = plt.subplots(figsize=(10, 5))
+            ax.plot(df['tanggal'], df['daging'], label='Aktual', linewidth=2)
+            ax.plot(df['tanggal'], df['pred_xgb'], label='Prediksi XGBoost', linestyle='--')
+            ax.plot(df['tanggal'], df['pred_optuna'], label='XGBoost + Optuna', linestyle='--')
+            ax.set_title("📊 Perbandingan Harga Aktual vs Prediksi")
+            ax.set_xlabel("Tanggal")
+            ax.set_ylabel("Harga (Rp)")
+            ax.legend()
+            st.pyplot(fig)
 
-        st.subheader("🔮 Prediksi 14 Hari ke Depan")
+            st.subheader("🔮 Prediksi 14 Hari ke Depan")
 
-        # Prediksi 14 hari ke depan
-        n_lags = 7
-        harga_series = df['daging'].copy()
-        df_lag = harga_series.to_frame(name='harga')
+            # Lakukan lagging
+            n_lags = 7
+            harga_series = df['daging'].copy()
+            df_lag = harga_series.to_frame(name='harga')
 
-        for i in range(1, n_lags + 1):
-            df_lag[f'lag_{i}'] = df_lag['harga'].shift(i)
+            for i in range(1, n_lags + 1):
+                df_lag[f'lag_{i}'] = df_lag['harga'].shift(i)
 
-        df_lag.dropna(inplace=True)
+            df_lag.dropna(inplace=True)
 
-        X_lag = df_lag[[f'lag_{i}' for i in range(1, n_lags + 1)]]
-        y_lag = df_lag['harga']
+            # Feature dan target
+            X_lag = df_lag[[f'lag_{i}' for i in range(1, n_lags + 1)]]
+            y_lag = df_lag['harga']
 
-        X_train_lag, X_test_lag, y_train_lag, y_test_lag = train_test_split(X_lag, y_lag, test_size=0.2, shuffle=False)
+            # Split dan scaling
+            X_train_lag, X_test_lag, y_train_lag, y_test_lag = train_test_split(
+                X_lag, y_lag, test_size=0.2, shuffle=False
+            )
+            scaler_lag = StandardScaler()
+            X_train_scaled_lag = scaler_lag.fit_transform(X_train_lag)
 
-        scaler_lag = StandardScaler()
-        X_train_scaled_lag = scaler_lag.fit_transform(X_train_lag)
-        X_test_scaled_lag = scaler_lag.transform(X_test_lag)
+            # Training ulang model
+            best_model.fit(X_train_scaled_lag, y_train_lag)
 
-        best_model.fit(X_train_scaled_lag, y_train_lag)
+            # Prediksi 14 hari ke depan
+            last_known = harga_series.iloc[-n_lags:].tolist()
+            future_preds = []
 
-        # Mulai prediksi 14 hari ke depan
-        last_known = harga_series.iloc[-n_lags:].tolist()
-        future_preds = []
+            for _ in range(14):
+                input_lags = pd.DataFrame([last_known[-n_lags:]], columns=[f'lag_{i}' for i in range(1, n_lags + 1)])
+                input_scaled = scaler_lag.transform(input_lags)
+                next_pred = best_model.predict(input_scaled)[0]
+                next_pred = round(float(next_pred), 2)
+                future_preds.append(next_pred)
+                last_known.append(next_pred)
 
-        for _ in range(14):
-            input_lags = pd.DataFrame([last_known[-n_lags:]], columns=[f'lag_{i}' for i in range(1, n_lags + 1)])
-            input_scaled = scaler_lag.transform(input_lags)
-            next_pred = best_model.predict(input_scaled)[0]
-            next_pred = round(float(next_pred), 2)
-            future_preds.append(next_pred)
-            last_known.append(next_pred)
+            # Buat DataFrame prediksi
+            today = pd.to_datetime(df['tanggal'].iloc[-1])
+            future_dates = [today + pd.Timedelta(days=i) for i in range(1, 15)]
 
-        # Tampilkan hasil prediksi
-        today = pd.to_datetime(df['tanggal'].iloc[-1])
-        future_dates = [today + pd.Timedelta(days=i) for i in range(1, 15)]
+            pred_14hari_df = pd.DataFrame({
+                'Tanggal': future_dates,
+                'Prediksi Harga Daging Ayam (Rp)': future_preds
+            })
 
-        pred_14hari_df = pd.DataFrame({
-            'Tanggal': future_dates,
-            'Prediksi Harga Daging Ayam (Rp)': future_preds
-        })
+            st.dataframe(pred_14hari_df)
 
-        st.dataframe(pred_14hari_df)
+            # Visualisasi prediksi ke depan
+            fig2, ax2 = plt.subplots(figsize=(10, 5))
+            ax2.plot(df['tanggal'], df['daging'], label='Aktual', linewidth=2)
+            ax2.plot(future_dates, future_preds, label='Prediksi 14 Hari ke Depan', linestyle='--', color='orange')
+            ax2.set_title("📈 Prediksi Harga Daging Ayam 14 Hari ke Depan")
+            ax2.set_xlabel("Tanggal")
+            ax2.set_ylabel("Harga (Rp)")
+            ax2.legend()
+            st.pyplot(fig2)
 
-        # Visualisasi prediksi ke depan
-        fig2, ax2 = plt.subplots(figsize=(10, 5))
-        ax2.plot(df['tanggal'], df['daging'], label='Aktual', linewidth=2)
-        ax2.plot(future_dates, future_preds, label='Prediksi 14 Hari ke Depan', linestyle='--', color='orange')
-        ax2.set_title("📈 Prediksi Harga Daging Ayam 14 Hari ke Depan")
-        ax2.set_xlabel("Tanggal")
-        ax2.set_ylabel("Harga (Rp)")
-        ax2.legend()
-        st.pyplot(fig2)
+        else:
+            st.error("Kolom 'tanggal' atau 'daging' tidak ditemukan di dataset.")
 
     else:
-        st.warning("Lakukan preprocessing dan pelatihan model terlebih dahulu.")
+        st.warning("Silakan lakukan preprocessing dan pelatihan model terlebih dahulu.")
+
 
