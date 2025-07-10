@@ -95,49 +95,48 @@ elif menu == "📂 Dataset":
             if missing_cols:
                 st.error(f"Kolom tidak ditemukan: {', '.join(missing_cols)}")
             else:
-                # Simpan ke session
                 st.session_state['df'] = df.copy()
                 st.success("✅ Dataset valid! Lanjut ke preprocessing.")
                 st.dataframe(df.head())
 
-                # Ubah kolom 'Date' jadi datetime
-                if 'Date' in df.columns:
-                    df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
+                # Konversi kolom tanggal
+                df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
 
-                # Konversi semua kolom harga ke numerik
+                # Bersihkan dan konversi kolom harga
                 harga_cols = [
                     'Harga Pakan Ternak Broiler', 'Harga DOC Broiler',
                     'Harga Jagung TK Peternak', 'Harga Daging Ayam Broiler'
                 ]
                 for col in harga_cols:
-                    df[col] = pd.to_numeric(df[col], errors='coerce')
+                    df[col] = (
+                        df[col].astype(str)
+                        .str.replace('.', '', regex=False)    # Hapus titik ribuan
+                        .str.replace(',', '.', regex=False)   # Ganti koma jadi titik desimal
+                    )
+                    df[col] = pd.to_numeric(df[col], errors='coerce')  # Konversi ke float
 
-                # Ambil statistik numerik
+                # Statistik numerik
                 st.subheader("📊 Deskripsi Statistik")
-                numeric_cols = df.select_dtypes(include=['number']).columns
-                stats_df = df[numeric_cols].describe().T
+                numeric_stats = df[harga_cols].describe().T
 
-                # Statistik manual untuk kolom tanggal
-                if 'Date' in df.columns:
-                    valid_dates = df['Date'].dropna()
-                    if not valid_dates.empty:
-                        date_stats = {
-                            'count': valid_dates.count(),
-                            'mean': valid_dates.mean(),
-                            'min': valid_dates.min(),
-                            '25%': valid_dates.quantile(0.25),
-                            '50%': valid_dates.median(),
-                            '75%': valid_dates.quantile(0.75),
-                            'max': valid_dates.max()
-                        }
-                        date_stats_df = pd.DataFrame(date_stats, index=['Date'])
-                        # Gabungkan ke stats_df
-                        combined_stats = pd.concat([stats_df, date_stats_df])
-                        st.dataframe(combined_stats)
-                    else:
-                        st.warning("Tidak ada data tanggal yang valid.")
+                # Statistik kolom tanggal
+                valid_dates = df['Date'].dropna()
+                if not valid_dates.empty:
+                    date_stats = pd.DataFrame({
+                        'count': [valid_dates.count()],
+                        'mean': [valid_dates.mean()],
+                        'min': [valid_dates.min()],
+                        '25%': [valid_dates.quantile(0.25)],
+                        '50%': [valid_dates.median()],
+                        '75%': [valid_dates.quantile(0.75)],
+                        'max': [valid_dates.max()]
+                    }, index=['Date'])
+
+                    # Gabungkan semua statistik
+                    combined_stats = pd.concat([numeric_stats, date_stats])
+                    st.dataframe(combined_stats)
                 else:
-                    st.dataframe(stats_df)
+                    st.dataframe(numeric_stats)
 
         except Exception as e:
             st.error(f"Gagal membaca file: {e}")
