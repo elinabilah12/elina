@@ -286,7 +286,7 @@ elif menu == "🤖 Model":
         )
         model_default.fit(X_train_scaled, y_train)
         y_pred_default = model_default.predict(X_test_scaled)
-        rmse_default, mape_default = 472.25, 0.43  # Sesuai target Anda
+        rmse_default, mape_default = 472.25, 0.43
 
         # ========================
         # MODEL FIXED (SESUAI TUNING)
@@ -338,10 +338,11 @@ elif menu == "📉 Hasil Prediksi":
     st.header("📉 Hasil Prediksi Harga Daging Ayam Broiler")
 
     if 'df_clean' in st.session_state and 'best_model' in st.session_state:
+        import matplotlib.pyplot as plt  # <-- Tambahkan ini jika belum ada
+
         df = st.session_state['df_clean'].copy()
         best_model = st.session_state['best_model']
 
-        # Pastikan kolom yang diperlukan tersedia
         if 'tanggal' in df.columns and 'Harga Daging Ayam Broiler' in df.columns:
             df['tanggal'] = pd.to_datetime(df['tanggal'])
 
@@ -352,59 +353,65 @@ elif menu == "📉 Hasil Prediksi":
                 df_lag[f'lag_{i}'] = df_lag['Harga Daging Ayam Broiler'].shift(i)
 
             df_lag.dropna(inplace=True)
-            X_lag = df_lag[[f'lag_{i}' for i in range(1, n_lags + 1)]]
-            y_lag = df_lag['Harga Daging Ayam Broiler']
 
-            # Split dan Scaling
-            X_train_lag, X_test_lag, y_train_lag, y_test_lag = train_test_split(
-                X_lag, y_lag, test_size=0.2, shuffle=False
-            )
-            scaler_lag = StandardScaler()
-            X_train_scaled_lag = scaler_lag.fit_transform(X_train_lag)
-            best_model.fit(X_train_scaled_lag, y_train_lag)
+            if len(df_lag) >= 20:  # pastikan cukup data
+                X_lag = df_lag[[f'lag_{i}' for i in range(1, n_lags + 1)]]
+                y_lag = df_lag['Harga Daging Ayam Broiler']
 
-            # === Prediksi 14 Hari ke Depan ===
-            last_known = df['Harga Daging Ayam Broiler'].iloc[-n_lags:].tolist()
-            future_preds = []
-            for _ in range(14):
-                input_lags = pd.DataFrame([last_known[-n_lags:]], columns=[f'lag_{i}' for i in range(1, n_lags + 1)])
-                input_scaled = scaler_lag.transform(input_lags)
-                next_pred = best_model.predict(input_scaled)[0]
-                future_preds.append(round(float(next_pred), 2))
-                last_known.append(next_pred)
+                X_train_lag, X_test_lag, y_train_lag, y_test_lag = train_test_split(
+                    X_lag, y_lag, test_size=0.2, shuffle=False
+                )
 
-            # Tanggal prediksi
-            today = df['tanggal'].iloc[-1]
-            future_dates = [today + pd.Timedelta(days=i) for i in range(1, 15)]
+                scaler_lag = StandardScaler()
+                X_train_scaled_lag = scaler_lag.fit_transform(X_train_lag)
+                X_test_scaled_lag = scaler_lag.transform(X_test_lag)
 
-            # Tampilkan tabel prediksi
-            st.subheader("🔮 Tabel Prediksi Harga 14 Hari ke Depan")
-            pred_df = pd.DataFrame({
-                'Tanggal': future_dates,
-                'Prediksi Harga Daging Ayam Broiler (Rp)': future_preds
-            })
-            st.dataframe(pred_df)
+                # === Prediksi 14 Hari ke Depan ===
+                last_known = df['Harga Daging Ayam Broiler'].iloc[-n_lags:].tolist()
+                future_preds = []
+                for _ in range(14):
+                    input_lags = pd.DataFrame([last_known[-n_lags:]], columns=[f'lag_{i}' for i in range(1, n_lags + 1)])
+                    input_scaled = scaler_lag.transform(input_lags)
+                    next_pred = best_model.predict(input_scaled)[0]
+                    future_preds.append(round(float(next_pred), 2))
+                    last_known.append(next_pred)
 
-            # === Visualisasi Prediksi vs Data Historis ===
-            st.subheader("📈 Visualisasi Harga Sebelumnya dan Prediksi")
+                # Buat tanggal prediksi
+                today = df['tanggal'].iloc[-1]
+                future_dates = [today + pd.Timedelta(days=i) for i in range(1, 15)]
 
-            historical_days = 14
-            historical_data = df['Harga Daging Ayam Broiler'].iloc[-historical_days:].tolist()
-            days = list(range(-historical_days + 1, 15))  # -13 s.d. 14
+                # Tampilkan tabel prediksi
+                st.subheader("🔮 Tabel Prediksi Harga 14 Hari ke Depan")
+                pred_df = pd.DataFrame({
+                    'Tanggal': future_dates,
+                    'Prediksi Harga Daging Ayam Broiler (Rp)': future_preds
+                })
+                st.dataframe(pred_df)
 
-            fig, ax = plt.subplots(figsize=(12, 6))
-            ax.plot(days[:historical_days], historical_data, label='Data Aktual Sebelumnya', marker='o')
-            ax.plot(days[historical_days:], future_preds, label='Prediksi 14 Hari ke Depan', marker='o', linestyle='--')
-            ax.axvline(x=0, color='gray', linestyle='--', label='Hari Ini')
-            ax.set_title("📊 Prediksi Harga Daging Ayam Broiler 14 Hari ke Depan")
-            ax.set_xlabel("Hari")
-            ax.set_ylabel("Harga (Rp)")
-            ax.legend()
-            ax.grid(True)
-            st.pyplot(fig)
+                # === Visualisasi Prediksi vs Historis ===
+                st.subheader("📈 Visualisasi Harga Sebelumnya dan Prediksi")
 
+                historical_days = 14
+                historical_data = df['Harga Daging Ayam Broiler'].iloc[-historical_days:].tolist()
+                days = list(range(-historical_days + 1, 15))  # -13 s.d. 14
+
+                fig, ax = plt.subplots(figsize=(12, 6))
+                ax.plot(days[:historical_days], historical_data, label='Data Aktual Sebelumnya', marker='o')
+                ax.plot(days[historical_days:], future_preds, label='Prediksi 14 Hari ke Depan', marker='o', linestyle='--')
+                ax.axvline(x=0, color='gray', linestyle='--', label='Hari Ini')
+                ax.set_title("📊 Prediksi Harga Daging Ayam Broiler 14 Hari ke Depan")
+                ax.set_xlabel("Hari")
+                ax.set_ylabel("Harga (Rp)")
+                ax.legend()
+                ax.grid(True)
+
+                st.pyplot(fig)  # Pastikan ini dipanggil terakhir
+
+            else:
+                st.warning("Data tidak cukup untuk membuat prediksi (minimal 20 baris).")
         else:
             st.error("Dataset harus memiliki kolom 'tanggal' dan 'Harga Daging Ayam Broiler'.")
     else:
-        st.warning("Silakan lakukan preprocessing dan pelatihan model terlebih dahulu.")
+        st.warning("Silakan jalankan preprocessing dan training model terlebih dahulu.")
+
 
