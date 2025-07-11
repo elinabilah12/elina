@@ -261,12 +261,17 @@ elif menu == "🤖 Model":
         X = df[fitur]
         y = df[target]
 
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=False)
+        # Gunakan pembagian data yang konsisten untuk time series
+        test_size = int(0.2 * len(df))
+        X_train, X_test = X[:-test_size], X[-test_size:]
+        y_train, y_test = y[:-test_size], y[-test_size:]
 
+        # Standardisasi
         scaler = StandardScaler()
         X_train_scaled = scaler.fit_transform(X_train)
         X_test_scaled = scaler.transform(X_test)
 
+        # Fungsi evaluasi
         def evaluate_model(y_true, y_pred):
             rmse = np.sqrt(mean_squared_error(y_true, y_pred))
             mape = mean_absolute_percentage_error(y_true, y_pred) * 100
@@ -309,6 +314,7 @@ elif menu == "🤖 Model":
         y_pred_best = best_model.predict(X_test_scaled)
         rmse_best, mape_best = evaluate_model(y_test, y_pred_best)
 
+        # Tampilkan hasil
         st.success("✅ Model selesai ditraining.")
 
         st.markdown("### 📈 Perbandingan Performa Model")
@@ -319,6 +325,7 @@ elif menu == "🤖 Model":
         | **XGBoost + Optuna**      | {rmse_best:.2f} | {mape_best:.2f}% |
         """)
 
+        # Tampilkan prediksi vs aktual
         hasil_df = pd.DataFrame({
             'Tanggal': df.iloc[y_test.index]['Date'].values if 'Date' in df.columns else range(len(y_test)),
             'Aktual': y_test.values,
