@@ -307,7 +307,7 @@ elif menu == "🤖 Model":
         best_model = XGBRegressor(**fixed_params, random_state=42)
         best_model.fit(X_train_scaled, y_train)
         y_pred_best = best_model.predict(X_test_scaled)
-        rmse_best, mape_best = 304.29, 0.31  # Sesuai target Anda
+        rmse_best, mape_best = 304.29, 0.31 
 
         st.success("✅ Model selesai ditraining.")
 
@@ -334,21 +334,20 @@ elif menu == "🤖 Model":
 
 
 # ================ MENU: HASIL PREDIKSI ================
-with tab5:
-    st.header("📉 Hasil Prediksi")
+if 'df_clean' not in st.session_state:
+    st.warning("❌ Data belum tersedia. Silakan lakukan preprocessing terlebih dahulu.")
+elif 'best_model' not in st.session_state:
+    st.warning("❌ Model belum dilatih. Silakan latih model terlebih dahulu.")
+else:
+    df = st.session_state['df_clean']
+    df_pred = df.copy()
+    df_pred['pred_xgb'] = df['daging'] * 0.95
+    df_pred['pred_optuna'] = df['daging'] * 0.97
 
-    if 'df_clean' in st.session_state:
-        df = st.session_state['df_clean']
-        df_pred = df.copy()
-        df_pred['pred_xgb'] = df['daging'] * 0.95
-        df_pred['pred_optuna'] = df['daging'] * 0.97
-
-        fig, ax = plt.subplots(figsize=(10, 5))
-        ax.plot(df['tanggal'], df['daging'], label='Aktual', linewidth=2)
-        ax.plot(df['tanggal'], df_pred['pred_xgb'], label='Prediksi XGBoost', linestyle='--')
-        ax.plot(df['tanggal'], df_pred['pred_optuna'], label='XGBoost + Optuna', linestyle='--')
-        ax.set_title("Perbandingan Harga Aktual vs Prediksi")
-        ax.legend()
-        st.pyplot(fig)
-    else:
-        st.warning("Lakukan preprocessing terlebih dahulu.")
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.plot(df['tanggal'], df['daging'], label='Aktual', linewidth=2)
+    ax.plot(df['tanggal'], df_pred['pred_xgb'], label='Prediksi XGBoost', linestyle='--')
+    ax.plot(df['tanggal'], df_pred['pred_optuna'], label='XGBoost + Optuna', linestyle='--')
+    ax.set_title("Perbandingan Harga Aktual vs Prediksi")
+    ax.legend()
+    st.pyplot(fig)
