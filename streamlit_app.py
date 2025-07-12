@@ -334,7 +334,6 @@ elif menu == "🤖 Model":
 
 
 # ================ MENU: HASIL PREDIKSI ================
-with tab5:
     st.header("📉 Hasil Prediksi")
 
     if 'df_clean' in st.session_state:
