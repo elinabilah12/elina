@@ -66,8 +66,7 @@ if menu == "🏠 Beranda":
     st.header("🏠 Hai Selamat Datang")
     st.markdown("""
     Selamat datang di **Dashboard Prediksi Harga Daging Ayam Broiler di Jawa Timur**.  
-    Dashboard ini memanfaatkan model st.markdown("""
-Model yang digunakan adalah **XGBoost**, algoritma machine learning yang handal untuk prediksi berbasis data historis. Model ini dioptimasi dengan **Optuna** untuk menemukan kombinasi parameter terbaik, sehingga mampu memberikan hasil prediksi harga daging ayam broiler yang lebih akurat dan stabil.
+    Dashboard ini memanfaatkan model yang digunakan adalah **XGBoost**, algoritma machine learning yang handal untuk prediksi berbasis data historis. Model ini dioptimasi dengan **Optuna** untuk menemukan kombinasi parameter terbaik, sehingga mampu memberikan hasil prediksi harga daging ayam broiler yang lebih akurat dan stabil.
 """) **XGBoost** dan **XGBoost dengan Optimasi Optuna** untuk memprediksi harga daging ayam broiler berdasarkan harga-harga komoditas pendukung seperti:
     - Harga Pakan Ternak Broiler
     - Harga DOC Broiler
