@@ -337,8 +337,19 @@ elif menu == "🤖 Model":
 elif menu == "📉 Hasil Prediksi":
     st.header("📉 Hasil Prediksi Harga Daging Ayam Broiler")
 
-    if 'df_clean' in st.session_state and 'best_model' in st.session_state:
-        import matplotlib.pyplot as plt  # <-- Tambahkan ini jika belum ada
+    # DEBUG: Tampilkan key di session_state
+    st.write("🧪 Session State Aktif:", list(st.session_state.keys()))
+
+    # Cek apakah df_clean dan best_model tersedia
+    if 'df_clean' not in st.session_state:
+        st.warning("❌ Data belum tersedia. Silakan lakukan preprocessing terlebih dahulu.")
+    elif 'best_model' not in st.session_state:
+        st.warning("❌ Model belum dilatih. Silakan latih model terlebih dahulu.")
+    else:
+        import matplotlib.pyplot as plt
+        from sklearn.model_selection import train_test_split
+        from sklearn.preprocessing import StandardScaler
+        import pandas as pd
 
         df = st.session_state['df_clean'].copy()
         best_model = st.session_state['best_model']
@@ -354,7 +365,7 @@ elif menu == "📉 Hasil Prediksi":
 
             df_lag.dropna(inplace=True)
 
-            if len(df_lag) >= 20:  # pastikan cukup data
+            if len(df_lag) >= 20:
                 X_lag = df_lag[[f'lag_{i}' for i in range(1, n_lags + 1)]]
                 y_lag = df_lag['Harga Daging Ayam Broiler']
 
@@ -388,12 +399,11 @@ elif menu == "📉 Hasil Prediksi":
                 })
                 st.dataframe(pred_df)
 
-                # === Visualisasi Prediksi vs Historis ===
+                # === Visualisasi ===
                 st.subheader("📈 Visualisasi Harga Sebelumnya dan Prediksi")
-
                 historical_days = 14
                 historical_data = df['Harga Daging Ayam Broiler'].iloc[-historical_days:].tolist()
-                days = list(range(-historical_days + 1, 15))  # -13 s.d. 14
+                days = list(range(-historical_days + 1, 15))
 
                 fig, ax = plt.subplots(figsize=(12, 6))
                 ax.plot(days[:historical_days], historical_data, label='Data Aktual Sebelumnya', marker='o')
@@ -404,14 +414,8 @@ elif menu == "📉 Hasil Prediksi":
                 ax.set_ylabel("Harga (Rp)")
                 ax.legend()
                 ax.grid(True)
-
-                st.pyplot(fig)  # Pastikan ini dipanggil terakhir
-
+                st.pyplot(fig)
             else:
-                st.warning("Data tidak cukup untuk membuat prediksi (minimal 20 baris).")
+                st.warning("❗ Data tidak cukup untuk prediksi. Minimal 20 baris diperlukan.")
         else:
-            st.error("Dataset harus memiliki kolom 'tanggal' dan 'Harga Daging Ayam Broiler'.")
-    else:
-        st.warning("Silakan jalankan preprocessing dan training model terlebih dahulu.")
-
-
+            st.error("❌ Dataset harus memiliki kolom 'tanggal' dan 'Harga Daging Ayam Broiler'.")
