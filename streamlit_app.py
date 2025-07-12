@@ -334,20 +334,48 @@ elif menu == "🤖 Model":
 
 
 # ================ MENU: HASIL PREDIKSI ================
-if 'df_clean' not in st.session_state:
-    st.warning("❌ Data belum tersedia. Silakan lakukan preprocessing terlebih dahulu.")
-elif 'best_model' not in st.session_state:
-    st.warning("❌ Model belum dilatih. Silakan latih model terlebih dahulu.")
-else:
-    df = st.session_state['df_clean']
-    df_pred = df.copy()
-    df_pred['pred_xgb'] = df['daging'] * 0.95
-    df_pred['pred_optuna'] = df['daging'] * 0.97
+with tab5:
+    st.header("📉 Hasil Prediksi")
 
-    fig, ax = plt.subplots(figsize=(10, 5))
-    ax.plot(df['tanggal'], df['daging'], label='Aktual', linewidth=2)
-    ax.plot(df['tanggal'], df_pred['pred_xgb'], label='Prediksi XGBoost', linestyle='--')
-    ax.plot(df['tanggal'], df_pred['pred_optuna'], label='XGBoost + Optuna', linestyle='--')
-    ax.set_title("Perbandingan Harga Aktual vs Prediksi")
-    ax.legend()
-    st.pyplot(fig)
+    # Debug: tampilkan session_state
+    st.write("🧪 Session aktif:", list(st.session_state.keys()))
+
+    # Cek data dan model
+    if 'df_clean' not in st.session_state:
+        st.warning("❌ Data belum tersedia. Silakan lakukan preprocessing terlebih dahulu.")
+    elif 'best_model' not in st.session_state:
+        st.warning("❌ Model belum dilatih. Silakan latih model terlebih dahulu.")
+    else:
+        import pandas as pd
+        import matplotlib.pyplot as plt
+
+        df = st.session_state['df_clean']
+        model = st.session_state['best_model']
+
+        # === Buat fitur prediksi (contoh: lag-7 manual) ===
+        n_lags = 7
+        df_lag = df[['daging']].copy()
+        for i in range(1, n_lags + 1):
+            df_lag[f'lag_{i}'] = df_lag['daging'].shift(i)
+        df_lag.dropna(inplace=True)
+
+        X_pred = df_lag[[f'lag_{i}' for i in range(1, n_lags + 1)]]
+        y_true = df_lag['daging']
+
+        # Prediksi dari model asli
+        y_pred = model.predict(X_pred)
+
+        # Gabungkan ke dataframe baru untuk visualisasi
+        df_result = df.iloc[-len(y_pred):].copy()
+        df_result['pred_xgb'] = y_pred
+
+        # Visualisasi
+        fig, ax = plt.subplots(figsize=(10, 5))
+        ax.plot(df_result['tanggal'], df_result['daging'], label='Aktual', linewidth=2)
+        ax.plot(df_result['tanggal'], df_result['pred_xgb'], label='Prediksi XGBoost', linestyle='--')
+        ax.set_title("Perbandingan Harga Aktual vs Prediksi")
+        ax.set_xlabel("Tanggal")
+        ax.set_ylabel("Harga Daging Ayam (Rp)")
+        ax.legend()
+        st.pyplot(fig)
+
