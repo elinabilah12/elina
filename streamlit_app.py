@@ -319,41 +319,42 @@ elif menu == "🤖 Model":
         | **XGBoost + Optuna**      | {rmse_best:.2f} | {mape_best:.2f}% |
         """)
 
-       if all(key in st.session_state for key in ['model_default', 'model_optuna', 'X_test', 'y_test', 'df_clean']):
-    model_default = st.session_state['model_default']
-    model_optuna = st.session_state['model_optuna']
-    X_test = st.session_state['X_test']
-    y_test = st.session_state['y_test']
-    df = st.session_state['df_clean']
+    if all(key in st.session_state for key in ['model_default', 'model_optuna', 'X_test', 'y_test', 'df_clean']):
+        model_default = st.session_state['model_default']
+        model_optuna = st.session_state['model_optuna']
+        X_test = st.session_state['X_test']
+        y_test = st.session_state['y_test']
+        df = st.session_state['df_clean']
+    
+        # Prediksi
+        y_pred_default = model_default.predict(X_test)
+        y_pred_best = model_optuna.predict(X_test)
+    
+        # Buat dataframe hasil prediksi
+        hasil_df = pd.DataFrame({
+            'Tanggal': df.iloc[y_test.index]['tanggal'].values if 'tanggal' in df.columns else range(len(y_test)),
+            'Aktual': y_test.values,
+            'Prediksi Default': y_pred_default,
+            'Prediksi Tuned': y_pred_best
+        }).reset_index(drop=True)
+    
+        # Pastikan kolom Tanggal dalam format datetime
+        hasil_df['Tanggal'] = pd.to_datetime(hasil_df['Tanggal'])
+    
+        # Visualisasi grafik Prediksi vs Aktual
+        st.subheader("📉 Grafik Prediksi vs Aktual")
+        fig1, ax1 = plt.subplots(figsize=(12, 5))
+        ax1.plot(hasil_df['Tanggal'], hasil_df['Aktual'], label='Aktual', linewidth=2)
+        ax1.plot(hasil_df['Tanggal'], hasil_df['Prediksi Default'], label='Prediksi Default', linestyle='--')
+        ax1.plot(hasil_df['Tanggal'], hasil_df['Prediksi Tuned'], label='Prediksi Tuned', linestyle='--')
+        ax1.set_title("Perbandingan Harga Aktual vs Prediksi")
+        ax1.legend()
+        ax1.tick_params(axis='x', rotation=45)
+        st.pyplot(fig1)
+    
+    else:
+        st.warning("Data belum tersedia. Silakan lakukan preprocessing atau pelatihan model terlebih dahulu.")
 
-    # Prediksi
-    y_pred_default = model_default.predict(X_test)
-    y_pred_best = model_optuna.predict(X_test)
-
-    # Buat dataframe hasil prediksi
-    hasil_df = pd.DataFrame({
-        'Tanggal': df.iloc[y_test.index]['tanggal'].values if 'tanggal' in df.columns else range(len(y_test)),
-        'Aktual': y_test.values,
-        'Prediksi Default': y_pred_default,
-        'Prediksi Tuned': y_pred_best
-    }).reset_index(drop=True)
-
-    # Pastikan kolom Tanggal dalam format datetime
-    hasil_df['Tanggal'] = pd.to_datetime(hasil_df['Tanggal'])
-
-    # Visualisasi grafik Prediksi vs Aktual
-    st.subheader("📉 Grafik Prediksi vs Aktual")
-    fig1, ax1 = plt.subplots(figsize=(12, 5))
-    ax1.plot(hasil_df['Tanggal'], hasil_df['Aktual'], label='Aktual', linewidth=2)
-    ax1.plot(hasil_df['Tanggal'], hasil_df['Prediksi Default'], label='Prediksi Default', linestyle='--')
-    ax1.plot(hasil_df['Tanggal'], hasil_df['Prediksi Tuned'], label='Prediksi Tuned', linestyle='--')
-    ax1.set_title("Perbandingan Harga Aktual vs Prediksi")
-    ax1.legend()
-    ax1.tick_params(axis='x', rotation=45)
-    st.pyplot(fig1)
-
-else:
-    st.warning("Data belum tersedia. Silakan lakukan preprocessing atau pelatihan model terlebih dahulu.")
 
    
 # ================ MENU: HASIL PREDIKSI ================
