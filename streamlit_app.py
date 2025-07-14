@@ -319,17 +319,6 @@ elif menu == "🤖 Model":
         | **XGBoost + Optuna**      | {rmse_best:.2f} | {mape_best:.2f}% |
         """)
 
-    # Buat dataframe hasil prediksi
-        hasil_df = pd.DataFrame({
-            'Tanggal': df.iloc[y_test.index]['Date'].values if 'Date' in df.columns else range(len(y_test)),
-            'Aktual': y_test.values,
-            'Prediksi Default': y_pred_default,
-            'Prediksi Tuned': y_pred_best
-        }).reset_index(drop=True)
-
-        st.subheader("📊 Hasil Prediksi vs Aktual")
-        st.dataframe(hasil_df.head(10))
-
     else:
         st.warning("Data belum tersedia. Silakan lakukan preprocessing terlebih dahulu.")
 
