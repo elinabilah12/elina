@@ -319,6 +319,8 @@ elif menu == "🤖 Model":
         | **XGBoost + Optuna**      | {rmse_best:.2f} | {mape_best:.2f}% |
         """)
 
+        # Pastikan Tanggal dalam format datetime
+        hasil_df['Tanggal'] = pd.to_datetime(hasil_df['Tanggal'])
         # Visualisasi Prediksi vs Aktual (sesuai gaya kamu sebelumnya)
         st.subheader("📉 Grafik Prediksi vs Aktual")
         fig1, ax1 = plt.subplots(figsize=(12, 5))
