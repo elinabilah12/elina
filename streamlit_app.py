@@ -410,6 +410,7 @@ if 'model_default' in st.session_state and 'model_optuna' in st.session_state an
     ax2.legend()
     ax2.tick_params(axis='x', rotation=45)
     st.pyplot(fig2)
+    
+else:
+    st.warning("Lakukan preprocessing terlebih dahulu.")
 
-  else:
-        st.warning("Lakukan preprocessing terlebih dahulu.")
