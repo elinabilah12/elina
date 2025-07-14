@@ -334,12 +334,6 @@ elif menu == "🤖 Model":
         st.warning("Data belum tersedia. Silakan lakukan preprocessing terlebih dahulu.")
 
 # ================ MENU: HASIL PREDIKSI ================
-st.set_page_config(layout="wide")
-st.title("📈 Prediksi Harga Daging Ayam Broiler di Jawa Timur")
-
-# Header
-st.header("📉 Hasil Prediksi")
-
 # Cek apakah data dan model tersedia
 if 'model_default' in st.session_state and 'model_optuna' in st.session_state and 'X_test' in st.session_state:
     model_default = st.session_state['model_default']
