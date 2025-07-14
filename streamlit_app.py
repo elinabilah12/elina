@@ -321,8 +321,8 @@ elif menu == "🤖 Model":
 
         # Pastikan Tanggal dalam format datetime
         hasil_df['Tanggal'] = pd.to_datetime(hasil_df['Tanggal'])
-        # Visualisasi Prediksi vs Aktual (sesuai gaya kamu sebelumnya)
-        st.subheader("📉 Grafik Prediksi vs Aktual")
+        
+        # Buat grafik
         fig1, ax1 = plt.subplots(figsize=(12, 5))
         ax1.plot(hasil_df['Tanggal'], hasil_df['Aktual'], label='Aktual', linewidth=2)
         ax1.plot(hasil_df['Tanggal'], hasil_df['Prediksi Default'], label='Prediksi Default', linestyle='--')
