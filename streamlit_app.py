@@ -319,7 +319,13 @@ elif menu == "🤖 Model":
         | **XGBoost + Optuna**      | {rmse_best:.2f} | {mape_best:.2f}% |
         """)
 
-        hasil_df = pd.DataFrame({
+    else:
+        st.warning("Silakan lakukan preprocessing terlebih dahulu.")
+
+
+# ================ MENU: HASIL PREDIKSI ================
+    st.header("📉 Hasil Prediksi")
+ hasil_df = pd.DataFrame({
             'Tanggal': df.iloc[y_test.index]['Date'].values if 'Date' in df.columns else range(len(y_test)),
             'Aktual': y_test.values,
             'Prediksi Default': y_pred_default,
@@ -328,14 +334,7 @@ elif menu == "🤖 Model":
 
         st.subheader("📊 Hasil Prediksi vs Aktual")
         st.dataframe(hasil_df.head(10))
-
-    else:
-        st.warning("Silakan lakukan preprocessing terlebih dahulu.")
-
-
-# ================ MENU: HASIL PREDIKSI ================
-    st.header("📉 Hasil Prediksi")
-
+   
     if 'df_clean' in st.session_state:
         df = st.session_state['df_clean']
         df_pred = df.copy()
