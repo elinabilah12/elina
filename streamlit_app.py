@@ -319,7 +319,7 @@ elif menu == "🤖 Model":
         | **XGBoost + Optuna**      | {rmse_best:.2f} | {mape_best:.2f}% |
         """)
 
-        if 'model_default' in st.session_state and 'model_optuna' in st.session_state and 'X_test' in st.session_state:
+       if all(key in st.session_state for key in ['model_default', 'model_optuna', 'X_test', 'y_test', 'df_clean']):
     model_default = st.session_state['model_default']
     model_optuna = st.session_state['model_optuna']
     X_test = st.session_state['X_test']
@@ -338,14 +338,10 @@ elif menu == "🤖 Model":
         'Prediksi Tuned': y_pred_best
     }).reset_index(drop=True)
 
-    # Konversi Tanggal ke datetime (jika belum)
+    # Pastikan kolom Tanggal dalam format datetime
     hasil_df['Tanggal'] = pd.to_datetime(hasil_df['Tanggal'])
 
-    # Tampilkan tabel
-    st.subheader("📊 Hasil Prediksi vs Aktual")
-    st.dataframe(hasil_df.head(10))
-
-    # Buat grafik
+    # Visualisasi grafik Prediksi vs Aktual
     st.subheader("📉 Grafik Prediksi vs Aktual")
     fig1, ax1 = plt.subplots(figsize=(12, 5))
     ax1.plot(hasil_df['Tanggal'], hasil_df['Aktual'], label='Aktual', linewidth=2)
@@ -357,7 +353,7 @@ elif menu == "🤖 Model":
     st.pyplot(fig1)
 
 else:
-    st.warning("Data belum tersedia. Silakan lakukan preprocessing terlebih dahulu.")
+    st.warning("Data belum tersedia. Silakan lakukan preprocessing atau pelatihan model terlebih dahulu.")
 
    
 # ================ MENU: HASIL PREDIKSI ================
