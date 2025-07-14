@@ -383,17 +383,17 @@ elif menu == "📉 Hasil Prediksi":
 
         last_date = df['tanggal'].max() if 'tanggal' in df.columns else datetime.date.today()
 
-    for i in range(14):
-        pred_default = model_default.predict(last_known_input)[0]
-        pred_optuna = model_optuna.predict(last_known_input)[0]
+        for i in range(14):
+            pred_default = model_default.predict(last_known_input)[0]
+            pred_optuna = model_optuna.predict(last_known_input)[0]
 
-        future_preds_default.append(pred_default)
-        future_preds_optuna.append(pred_optuna)
+            future_preds_default.append(pred_default)
+            future_preds_optuna.append(pred_optuna)
 
-        next_date = last_date + datetime.timedelta(days=i + 1)
-        future_dates.append(next_date)
+            next_date = last_date + datetime.timedelta(days=i + 1)
+            future_dates.append(next_date)
 
-        # NOTE: Jika kamu menggunakan fitur lag (misal lag_1, lag_2), update last_known_input di sini
+            # NOTE: Jika kamu menggunakan fitur lag (misal lag_1, lag_2), update last_known_input di sini
 
         future_df = pd.DataFrame({
             'Tanggal': future_dates,
@@ -413,5 +413,5 @@ elif menu == "📉 Hasil Prediksi":
         ax2.tick_params(axis='x', rotation=45)
         st.pyplot(fig2)
 
-else:
-    st.warning("Model dan data belum tersedia. Harap lakukan preprocessing dan pelatihan model terlebih dahulu.")
+    else:
+        st.warning("Model dan data belum tersedia. Harap lakukan preprocessing dan pelatihan model terlebih dahulu.")
