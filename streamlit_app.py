@@ -332,10 +332,7 @@ elif menu == "🤖 Model":
 
     else:
         st.warning("Data belum tersedia. Silakan lakukan preprocessing terlebih dahulu.")
-    
-    elif menu == "📉 Hasil Prediksi":
-    st.header("📉 Hasil Prediksi")
-
+   
     if 'model_default' in st.session_state and 'model_optuna' in st.session_state and 'X_test' in st.session_state:
         model_default = st.session_state['model_default']
         model_optuna = st.session_state['model_optuna']
