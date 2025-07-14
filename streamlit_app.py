@@ -345,11 +345,13 @@ elif menu == "📉 Hasil Prediksi":
         X_train = st.session_state['X_train']
         df = st.session_state['df_clean']  # dataframe yang sudah dibersihkan
 
-        # Prediksi dari model
+        # ====================
+        # Prediksi Model
+        # ====================
         y_pred_default = model_default.predict(X_test)
         y_pred_best = model_optuna.predict(X_test)
     
-        # Buat DataFrame hasil prediksi vs aktual
+        # DataFrame Prediksi vs Aktual
         hasil_df = pd.DataFrame({
             'Tanggal': df.iloc[y_test.index]['tanggal'].values if 'tanggal' in df.columns else range(len(y_test)),
             'Aktual': y_test.values,
@@ -360,7 +362,7 @@ elif menu == "📉 Hasil Prediksi":
         st.subheader("📊 Dataframe Hasil Prediksi vs Aktual")
         st.dataframe(hasil_df.head(10))
     
-        # Visualisasi Prediksi vs Aktual
+        # Grafik Prediksi vs Aktual
         st.subheader("📉 Grafik Prediksi vs Aktual")
         fig1, ax1 = plt.subplots(figsize=(12, 5))
         ax1.plot(hasil_df['Tanggal'], hasil_df['Aktual'], label='Aktual', linewidth=2)
@@ -370,12 +372,12 @@ elif menu == "📉 Hasil Prediksi":
         ax1.legend()
         ax1.tick_params(axis='x', rotation=45)
         st.pyplot(fig1)
-    
+
         # ================================
         # Prediksi 14 Hari ke Depan
         # ================================
         st.subheader("📅 Prediksi 14 Hari ke Depan")
-    
+
         last_known_input = X_train.iloc[-1:].copy()
         future_preds_default = []
         future_preds_optuna = []
@@ -384,26 +386,31 @@ elif menu == "📉 Hasil Prediksi":
         last_date = df['tanggal'].max() if 'tanggal' in df.columns else datetime.date.today()
 
         for i in range(14):
+            # Prediksi
             pred_default = model_default.predict(last_known_input)[0]
             pred_optuna = model_optuna.predict(last_known_input)[0]
 
+            # Simpan hasil prediksi
             future_preds_default.append(pred_default)
             future_preds_optuna.append(pred_optuna)
 
+            # Tanggal prediksi
             next_date = last_date + datetime.timedelta(days=i + 1)
             future_dates.append(next_date)
 
-            # NOTE: Jika kamu menggunakan fitur lag (misal lag_1, lag_2), update last_known_input di sini
+            # Catatan: Jika kamu pakai fitur lag, update last_known_input di sini
 
+        # DataFrame hasil prediksi 14 hari
         future_df = pd.DataFrame({
             'Tanggal': future_dates,
             'Prediksi XGBoost': future_preds_default,
             'Prediksi XGBoost + Optuna': future_preds_optuna
         })
 
+        # Tampilkan tabel
         st.dataframe(future_df)
-    
-        # Visualisasi Prediksi 14 Hari ke Depan
+
+        # Visualisasi grafik
         st.subheader("📈 Grafik Prediksi 14 Hari ke Depan")
         fig2, ax2 = plt.subplots(figsize=(12, 5))
         ax2.plot(future_df['Tanggal'], future_df['Prediksi XGBoost'], label='XGBoost')
@@ -415,3 +422,4 @@ elif menu == "📉 Hasil Prediksi":
 
     else:
         st.warning("Model dan data belum tersedia. Harap lakukan preprocessing dan pelatihan model terlebih dahulu.")
+
