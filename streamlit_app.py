@@ -211,7 +211,10 @@ elif menu == "🤖 Model":
     if 'df_clean' in st.session_state:
         df = st.session_state['df_clean'].copy()
 
-        # Buat fitur baru
+        # Batasi ke 365 hari terakhir biar cepat
+        df = df.tail(365)
+
+        # Fitur baru
         df['rasio_pakan_daging'] = df['pakan'] / df['daging']
         df['rasio_doc_daging'] = df['doc'] / df['daging']
         df['rasio_jagung_pakan'] = df['jagung'] / df['pakan']
@@ -246,76 +249,82 @@ elif menu == "🤖 Model":
             mape = mean_absolute_percentage_error(y_true, y_pred) * 100
             return rmse, mape
 
-        # ========================
-        # MODEL DEFAULT
-        # ========================
-        model_default = XGBRegressor(
-            n_estimators=100,
-            learning_rate=0.1,
-            max_depth=3,
-            subsample=1,
-            colsample_bytree=1,
-            objective='reg:squarederror',
-            random_state=42
-        )
-        model_default.fit(X_train_scaled, y_train)
-        y_pred_default = model_default.predict(X_test_scaled)
-        rmse_default, mape_default = 472.25, 0.43
+        with st.spinner("⏳ Training model... mohon tunggu..."):
+            start_time = time.time()
 
-        # ========================
-        # MODEL FIXED (SESUAI TUNING)
-        # ========================
-        fixed_params = {
-            'n_estimators': 200,
-            'max_depth': 4,
-            'learning_rate': 0.05,
-            'subsample': 0.8,
-            'colsample_bytree': 0.8,
-            'gamma': 0,
-            'reg_alpha': 0.5,
-            'reg_lambda': 1,
-            'min_child_weight': 1,
-            'objective': 'reg:squarederror'
-        }
+            # Default Model
+            default_params = {
+                'n_estimators': 50,
+                'learning_rate': 0.1,
+                'max_depth': 3,
+                'subsample': 1,
+                'colsample_bytree': 1,
+                'objective': 'reg:squarederror'
+            }
+            model_default = XGBRegressor(**default_params, random_state=42)
+            model_default.fit(X_train_scaled, y_train)
+            y_pred_default = model_default.predict(X_test_scaled)
+            rmse_default, mape_default = evaluate_model(y_test, y_pred_default)
 
-        best_model = XGBRegressor(**fixed_params, random_state=42)
-        best_model.fit(X_train_scaled, y_train)
-        y_pred_best = best_model.predict(X_test_scaled)
-        rmse_best, mape_best = 304.29, 0.31 
+            # Tuned Model
+            fixed_params = {
+                'n_estimators': 100,
+                'max_depth': 4,
+                'learning_rate': 0.05,
+                'subsample': 0.8,
+                'colsample_bytree': 0.8,
+                'gamma': 0,
+                'reg_alpha': 0.5,
+                'reg_lambda': 1,
+                'min_child_weight': 1,
+                'objective': 'reg:squarederror'
+            }
+
+            model_optuna = XGBRegressor(**fixed_params, random_state=42)
+            model_optuna.fit(X_train_scaled, y_train)
+            y_pred_best = model_optuna.predict(X_test_scaled)
+            rmse_best, mape_best = evaluate_model(y_test, y_pred_best)
+
+            end_time = time.time()
 
         st.success("✅ Model selesai ditraining.")
+        st.info(f"⏱ Waktu proses training: {end_time - start_time:.2f} detik")
+
+        # Simpan di session_state
+        st.session_state['model_default'] = model_default
+        st.session_state['model_optuna'] = model_optuna
+        st.session_state['X_test'] = X_test_scaled
+        st.session_state['y_test'] = y_test
+        st.session_state['tanggal_test'] = df.iloc[y_test.index]['tanggal'].values if 'tanggal' in df.columns else None
 
         st.markdown("### 📈 Perbandingan Performa Model")
         st.markdown(f"""
-        | Model                     | RMSE     | MAPE    |
-        |---------------------------|----------|---------|
-        | *XGBoost Default*       | {rmse_default:.2f} | {mape_default:.2f}% |
-        | *XGBoost + Optuna*      | {rmse_best:.2f} | {mape_best:.2f}% |
+        | Model                | RMSE     | MAPE    |
+        |----------------------|----------|---------|
+        | *XGBoost Default*    | {rmse_default:.2f} | {mape_default:.2f}% |
+        | *XGBoost + Optuna*   | {rmse_best:.2f} | {mape_best:.2f}% |
         """)
 
-    if all(key in st.session_state for key in ['model_default', 'model_optuna', 'X_test', 'y_test', 'df_clean']):
+    # ============================
+    # VISUALISASI HASIL PREDIKSI
+    # ============================
+    if all(key in st.session_state for key in ['model_default', 'model_optuna', 'X_test', 'y_test']):
         model_default = st.session_state['model_default']
         model_optuna = st.session_state['model_optuna']
         X_test = st.session_state['X_test']
         y_test = st.session_state['y_test']
-        df = st.session_state['df_clean']
-    
-        # Prediksi
+        tanggal_test = st.session_state['tanggal_test']
+
         y_pred_default = model_default.predict(X_test)
         y_pred_best = model_optuna.predict(X_test)
-    
-        # Buat dataframe hasil prediksi
+
         hasil_df = pd.DataFrame({
-            'Tanggal': df.iloc[y_test.index]['tanggal'].values if 'tanggal' in df.columns else range(len(y_test)),
+            'Tanggal': pd.to_datetime(tanggal_test) if tanggal_test is not None else range(len(y_test)),
             'Aktual': y_test.values,
             'Prediksi Default': y_pred_default,
             'Prediksi Tuned': y_pred_best
-        }).reset_index(drop=True)
-    
-        # Pastikan kolom Tanggal dalam format datetime
-        hasil_df['Tanggal'] = pd.to_datetime(hasil_df['Tanggal'])
-    
-        # Visualisasi grafik Prediksi vs Aktual
+        })
+
         st.subheader("📉 Grafik Prediksi vs Aktual")
         fig1, ax1 = plt.subplots(figsize=(12, 5))
         ax1.plot(hasil_df['Tanggal'], hasil_df['Aktual'], label='Aktual', linewidth=2)
@@ -325,10 +334,9 @@ elif menu == "🤖 Model":
         ax1.legend()
         ax1.tick_params(axis='x', rotation=45)
         st.pyplot(fig1)
-    
-    else:
-        st.warning("Data belum tersedia. Silakan lakukan preprocessing atau pelatihan model terlebih dahulu.")
 
+    else:
+        st.warning("⚠️ Data belum tersedia. Silakan lakukan preprocessing atau pelatihan model terlebih dahulu.")
 
    
 # ================ MENU: HASIL PREDIKSI ================
