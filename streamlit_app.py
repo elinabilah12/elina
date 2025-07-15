@@ -422,6 +422,4 @@ elif menu == "📉 Hasil Prediksi":
         st.pyplot(fig2)
 
     else:
-        st.warning("Model dan data belum tersedia. Harap lakukan preprocessing dan pelatihan model terlebih dahulu."
-
-    
+        st.warning("Model dan data belum tersedia. Harap lakukan preprocessing dan pelatihan model terlebih dahulu.")
