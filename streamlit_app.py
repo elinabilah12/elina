@@ -422,9 +422,8 @@ elif menu == "📉 Hasil Prediksi":
         X_train_scaled_lag = scaler_lag.fit_transform(X_train_lag)
         X_test_scaled_lag = scaler_lag.transform(X_test_lag)
 
-        # Gunakan model terbaik dari Optuna
+        # Gunakan model terbaik dari Optuna (tanpa fit ulang!)
         best_model = model_optuna
-        best_model.fit(X_train_scaled_lag, y_train_lag)
 
         # Prediksi 14 hari ke depan
         last_known = df[target_col].iloc[-n_lags:].tolist()
@@ -457,7 +456,13 @@ elif menu == "📉 Hasil Prediksi":
         ax2.grid(True)
         st.pyplot(fig2)
 
+        # Tabel hasil prediksi
+        st.subheader("📋 Tabel Hasil Prediksi 14 Hari ke Depan")
+        pred_table = pd.DataFrame({
+            'Hari ke-': [f'Hari ke-{i+1}' for i in range(14)],
+            'Prediksi Harga (Rp)': [f"Rp{pred:,.2f}" for pred in future_preds]
+        })
+        st.table(pred_table)
+
     else:
         st.warning("Model dan data belum tersedia. Harap lakukan preprocessing dan pelatihan model terlebih dahulu.")
-
-
