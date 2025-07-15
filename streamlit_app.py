@@ -456,7 +456,9 @@ elif menu == "📉 Hasil Prediksi":
         ax2.grid(True)
         st.pyplot(fig2)
 
-        # Tabel hasil prediksi
+        # =====================
+        # TABEL HASIL PREDIKSI
+        # =====================
         st.subheader("📋 Tabel Hasil Prediksi 14 Hari ke Depan")
         pred_table = pd.DataFrame({
             'Hari ke-': [f'Hari ke-{i+1}' for i in range(14)],
@@ -466,3 +468,4 @@ elif menu == "📉 Hasil Prediksi":
 
     else:
         st.warning("Model dan data belum tersedia. Harap lakukan preprocessing dan pelatihan model terlebih dahulu.")
+
