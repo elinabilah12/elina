@@ -392,40 +392,42 @@ elif menu == "📉 Hasil Prediksi":
         st.pyplot(fig3)
 
         # ================================
-        # Prediksi 14 Hari ke Depan (sesuai Colab)
+        # Prediksi 14 Hari ke Depan
         # ================================
         st.subheader("📅 Prediksi 14 Hari ke Depan")
 
-        # ✅ CEK apakah kolom 'Harga Daging Ayam Broiler' tersedia
-        if 'Harga Daging Ayam Broiler' not in df.columns:
-            st.error("❌ Kolom 'Harga Daging Ayam Broiler' tidak ditemukan di DataFrame. Kolom yang tersedia:")
-            st.write(df.columns.tolist())
+        n_lags = 7
+        target_col = 'daging'  # Ubah ke 'daging_log' kalau pakai log-transformed
+
+        # Cek apakah kolom target tersedia
+        if target_col not in df.columns:
+            st.error(f"❌ Kolom '{target_col}' tidak ditemukan di DataFrame. Kolom yang tersedia:\n\n{df.columns.tolist()}")
             st.stop()
 
-        n_lags = 7
-        # Ganti 'daging' dengan 'daging_log' jika kamu ingin pakai versi log-transformed
-        target_col = 'daging'  
-            
+        # Buat data dengan lag
         df_lag = df[[target_col]].copy()
         for i in range(1, n_lags + 1):
-        df_lag[f'lag_{i}'] = df_lag[target_col].shift(i)
-            
+            df_lag[f'lag_{i}'] = df_lag[target_col].shift(i)
+
         df_lag.dropna(inplace=True)
-            
+
         X_lag = df_lag[[f'lag_{i}' for i in range(1, n_lags + 1)]]
         y_lag = df_lag[target_col]
 
-        X_train_lag, X_test_lag, y_train_lag, y_test_lag = train_test_split(X_lag, y_lag, test_size=0.2, shuffle=False)
+        X_train_lag, X_test_lag, y_train_lag, y_test_lag = train_test_split(
+            X_lag, y_lag, test_size=0.2, shuffle=False
+        )
 
         scaler_lag = StandardScaler()
         X_train_scaled_lag = scaler_lag.fit_transform(X_train_lag)
         X_test_scaled_lag = scaler_lag.transform(X_test_lag)
 
-        # Gunakan best_model hasil tuning
+        # Gunakan model terbaik dari Optuna
         best_model = model_optuna
         best_model.fit(X_train_scaled_lag, y_train_lag)
 
-        last_known = df['Harga Daging Ayam Broiler'].iloc[-n_lags:].tolist()
+        # Prediksi 14 hari ke depan
+        last_known = df[target_col].iloc[-n_lags:].tolist()
         future_preds = []
 
         for _ in range(14):
@@ -435,11 +437,11 @@ elif menu == "📉 Hasil Prediksi":
             future_preds.append(round(float(next_pred), 2))
             last_known.append(next_pred)
 
-        # Ambil data historis terakhir 14 hari
+        # Ambil 14 hari terakhir dari data historis
         historical_days = 14
-        historical_data = df['Harga Daging Ayam Broiler'].iloc[-historical_days:].tolist()
+        historical_data = df[target_col].iloc[-historical_days:].tolist()
 
-        # Buat sumbu x dari -13 s.d. 14
+        # Buat sumbu x: -13 s.d. 14
         days = list(range(-historical_days + 1, 14 + 1))  # -13 to 14
 
         # Visualisasi grafik
@@ -457,4 +459,5 @@ elif menu == "📉 Hasil Prediksi":
 
     else:
         st.warning("Model dan data belum tersedia. Harap lakukan preprocessing dan pelatihan model terlebih dahulu.")
+
 
