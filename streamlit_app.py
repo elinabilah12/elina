@@ -237,7 +237,7 @@ elif menu == "🤖 Model":
     if 'df_clean' in st.session_state:
         df = st.session_state['df_clean'].copy()
 
-        # Buat fitur baru
+        # Fitur Engineering
         df['rasio_pakan_daging'] = df['pakan'] / df['daging']
         df['rasio_doc_daging'] = df['doc'] / df['daging']
         df['rasio_jagung_pakan'] = df['jagung'] / df['pakan']
@@ -250,6 +250,7 @@ elif menu == "🤖 Model":
         df['pct_change_daging'] = df['daging'].pct_change()
 
         df.dropna(inplace=True)
+        df.reset_index(drop=True, inplace=True)
 
         fitur = [
             'rasio_pakan_daging', 'rasio_doc_daging', 'rasio_jagung_pakan',
@@ -269,13 +270,14 @@ elif menu == "🤖 Model":
         X_train_scaled = scaler.fit_transform(X_train)
         X_test_scaled = scaler.transform(X_test)
 
-        # Fungsi evaluasi
         def evaluate_model(y_true, y_pred):
             rmse = np.sqrt(mean_squared_error(y_true, y_pred))
             mape = mean_absolute_percentage_error(y_true, y_pred) * 100
             return rmse, mape
 
-        # Model default
+        # ========================
+        # Model Default
+        # ========================
         model_default = XGBRegressor(
             n_estimators=100,
             learning_rate=0.1,
@@ -289,8 +291,10 @@ elif menu == "🤖 Model":
         y_pred_default = model_default.predict(X_test_scaled)
         rmse_default, mape_default = evaluate_model(y_test, y_pred_default)
 
-        # Model hasil tuning
-        tuned_params = {
+        # ========================
+        # Model Tuned (Optuna Result)
+        # ========================
+        fixed_params = {
             'n_estimators': 200,
             'max_depth': 4,
             'learning_rate': 0.05,
@@ -302,52 +306,59 @@ elif menu == "🤖 Model":
             'min_child_weight': 1,
             'objective': 'reg:squarederror'
         }
-        model_tuned = XGBRegressor(**tuned_params, random_state=42)
-        model_tuned.fit(X_train_scaled, y_train)
-        y_pred_tuned = model_tuned.predict(X_test_scaled)
-        rmse_tuned, mape_tuned = evaluate_model(y_test, y_pred_tuned)
 
-        # Simpan ke session
+        model_optuna = XGBRegressor(**fixed_params, random_state=42)
+        model_optuna.fit(X_train_scaled, y_train)
+        y_pred_optuna = model_optuna.predict(X_test_scaled)
+        rmse_best, mape_best = evaluate_model(y_test, y_pred_optuna)
+
+        # Simpan ke session state
         st.session_state['model_default'] = model_default
-        st.session_state['model_optuna'] = model_tuned
+        st.session_state['model_optuna'] = model_optuna
         st.session_state['X_test'] = X_test_scaled
         st.session_state['y_test'] = y_test
+        st.session_state['df_clean'] = df
 
-        st.success("✅ Model selesai ditraining.")
+        st.success("✅ Model berhasil ditraining.")
 
-        # Tampilkan tabel perbandingan
+        # ========================
+        # Tampilkan Hasil Evaluasi
+        # ========================
         st.markdown("### 📈 Perbandingan Performa Model")
         st.markdown(f"""
-        | Model                | RMSE     | MAPE    |
-        |----------------------|----------|---------|
-        | *XGBoost Default*    | {rmse_default:.2f} | {mape_default:.2f}% |
-        | *XGBoost + Optuna*   | {rmse_tuned:.2f} | {mape_tuned:.2f}% |
+        | Model                  | RMSE     | MAPE     |
+        |------------------------|----------|----------|
+        | XGBoost Default        | {rmse_default:.2f} | {mape_default:.2f}% |
+        | XGBoost + Optuna       | {rmse_best:.2f} | {mape_best:.2f}% |
         """)
 
-        # Grafik Prediksi vs Aktual
+        # ========================
+        # Visualisasi Hasil Prediksi
+        # ========================
         st.subheader("📉 Grafik Prediksi vs Aktual")
 
-        tanggal_data = df.iloc[y_test.index]['tanggal'] if 'tanggal' in df.columns else pd.date_range(start='2020-01-01', periods=len(y_test))
-
+        tanggal_data = df['tanggal'].iloc[-len(y_test):].values if 'tanggal' in df.columns else pd.date_range(start='2020-01-01', periods=len(y_test))
         hasil_df = pd.DataFrame({
-            'Tanggal': pd.to_datetime(tanggal_data),
+            'Tanggal': tanggal_data,
             'Aktual': y_test.values,
             'Prediksi Default': y_pred_default,
-            'Prediksi Tuned': y_pred_tuned
+            'Prediksi Tuned': y_pred_optuna
         })
 
-        fig, ax = plt.subplots(figsize=(12, 5))
-        ax.plot(hasil_df['Tanggal'], hasil_df['Aktual'], label='Aktual', linewidth=2)
-        ax.plot(hasil_df['Tanggal'], hasil_df['Prediksi Default'], label='Default', linestyle='--')
-        ax.plot(hasil_df['Tanggal'], hasil_df['Prediksi Tuned'], label='Tuned', linestyle='--')
-        ax.set_title("Perbandingan Harga Aktual vs Prediksi")
-        ax.set_xlabel("Tanggal")
-        ax.set_ylabel("Harga Daging")
-        ax.legend()
-        ax.grid(True)
-        ax.tick_params(axis='x', rotation=45)
-        st.pyplot(fig)
+        hasil_df['Tanggal'] = pd.to_datetime(hasil_df['Tanggal'])
+
+        fig1, ax1 = plt.subplots(figsize=(12, 5))
+        ax1.plot(hasil_df['Tanggal'], hasil_df['Aktual'], label='Aktual', linewidth=2)
+        ax1.plot(hasil_df['Tanggal'], hasil_df['Prediksi Default'], label='Prediksi Default', linestyle='--')
+        ax1.plot(hasil_df['Tanggal'], hasil_df['Prediksi Tuned'], label='Prediksi Tuned', linestyle='--')
+        ax1.set_title("Perbandingan Harga Aktual vs Prediksi")
+        ax1.set_xlabel("Tanggal")
+        ax1.set_ylabel("Harga Daging Ayam")
+        ax1.legend()
+        ax1.tick_params(axis='x', rotation=45)
+        st.pyplot(fig1)
 
     else:
-        st.warning("❗ Data belum tersedia. Silakan lakukan preprocessing terlebih dahulu.")
+        st.warning("Data belum tersedia. Silakan lakukan preprocessing terlebih dahulu.")
+
 
