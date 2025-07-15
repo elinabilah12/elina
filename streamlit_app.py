@@ -403,14 +403,17 @@ elif menu == "📉 Hasil Prediksi":
             st.stop()
 
         n_lags = 7
-        df_lag = df[['Harga Daging Ayam Broiler']].copy()
+        # Ganti 'daging' dengan 'daging_log' jika kamu ingin pakai versi log-transformed
+        target_col = 'daging'  
+            
+        df_lag = df[[target_col]].copy()
         for i in range(1, n_lags + 1):
-            df_lag[f'lag_{i}'] = df_lag['Harga Daging Ayam Broiler'].shift(i)
-
+        df_lag[f'lag_{i}'] = df_lag[target_col].shift(i)
+            
         df_lag.dropna(inplace=True)
-
+            
         X_lag = df_lag[[f'lag_{i}' for i in range(1, n_lags + 1)]]
-        y_lag = df_lag['Harga Daging Ayam Broiler']
+        y_lag = df_lag[target_col]
 
         X_train_lag, X_test_lag, y_train_lag, y_test_lag = train_test_split(X_lag, y_lag, test_size=0.2, shuffle=False)
 
