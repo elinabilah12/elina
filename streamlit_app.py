@@ -357,47 +357,96 @@ elif menu == "🤖 Model":
 
 # ================ MENU: HASIL PREDIKSI ========================= 
 elif menu == "📉 Hasil Prediksi":
-    st.header("📉 Hasil Prediksi 14 Hari ke Depan")
+    st.header("📉 Hasil Prediksi")
 
-    if 'df_clean' in st.session_state:
-        df = st.session_state['df_clean'].copy()
+    if 'model_default' in st.session_state and 'model_optuna' in st.session_state and 'X_test' in st.session_state:
+        model_default = st.session_state['model_default']
+        model_optuna = st.session_state['model_optuna']
+        X_test = st.session_state['X_test']
+        y_test = st.session_state['y_test']
+        X_train = st.session_state['X_train']
+        df = st.session_state['df_clean']  # dataframe yang sudah dibersihkan
 
-        # Gunakan model yang sudah dilatih sebelumnya
-        if 'model_default' not in locals():
-            st.warning("Silakan jalankan menu Model terlebih dahulu.")
-        else:
-            last_row = df.iloc[-1:]
-            future_preds = []
+        # ====================
+        # Prediksi Model (uji)
+        # ====================
+        y_pred_default = model_default.predict(X_test)
+        y_pred_best = model_optuna.predict(X_test)
 
-            for i in range(14):
-                fitur_baru = {
-                    'rasio_pakan_daging': last_row['pakan'].values[0] / last_row['daging'].values[0],
-                    'rasio_doc_daging': last_row['doc'].values[0] / last_row['daging'].values[0],
-                    'rasio_jagung_pakan': last_row['jagung'].values[0] / last_row['pakan'].values[0],
-                    'ma7_daging': df['daging'].iloc[-7:].mean(),
-                    'ma7_pakan': df['pakan'].iloc[-7:].mean(),
-                    'ma7_doc': df['doc'].iloc[-7:].mean(),
-                    'ma7_jagung': df['jagung'].iloc[-7:].mean(),
-                    'lag1_daging': last_row['daging'].values[0],
-                    'lag2_daging': df['daging'].iloc[-2],
-                    'pct_change_daging': df['daging'].pct_change().iloc[-1]
-                }
+        # ============================
+        # Visualisasi Aktual vs Prediksi
+        # ============================
+        st.subheader("📊 Grafik Aktual vs Prediksi (Data Uji)")
 
-                fitur_df = pd.DataFrame([fitur_baru])
-                fitur_scaled = scaler.transform(fitur_df)
-                pred = best_model.predict(fitur_scaled)[0]
-                pred_date = df['tanggal'].iloc[-1] + pd.Timedelta(days=i+1)
+        hasil_df = pd.DataFrame({
+            'Tanggal': df.iloc[y_test.index]['tanggal'].values,
+            'Aktual': y_test,
+            'Prediksi XGBoost': y_pred_default,
+            'Prediksi XGBoost + Optuna': y_pred_best
+        })
 
-                future_preds.append({'Tanggal': pred_date, 'Prediksi Harga Daging': pred})
+        fig3, ax3 = plt.subplots(figsize=(12, 5))
+        ax3.plot(hasil_df['Tanggal'], hasil_df['Aktual'], label='Aktual', linewidth=2)
+        ax3.plot(hasil_df['Tanggal'], hasil_df['Prediksi XGBoost'], label='Prediksi XGBoost', linestyle='--')
+        ax3.plot(hasil_df['Tanggal'], hasil_df['Prediksi XGBoost + Optuna'], label='Prediksi Tuned', linestyle='--')
+        ax3.set_title("Perbandingan Harga Aktual vs Prediksi (Data Uji)")
+        ax3.legend()
+        ax3.tick_params(axis='x', rotation=45)
+        st.pyplot(fig3)
 
-                # Update last_row untuk prediksi selanjutnya
-                new_row = last_row.copy()
-                new_row['daging'] = pred
-                last_row = new_row
+        # ================================
+        # Prediksi 14 Hari ke Depan (sesuai Colab)
+        # ================================
+        st.subheader("📅 Prediksi 14 Hari ke Depan")
 
-            future_df = pd.DataFrame(future_preds)
+        n_lags = 7
+        df_lag = df[['Harga Daging Ayam Broiler']].copy()
+        for i in range(1, n_lags + 1):
+            df_lag[f'lag_{i}'] = df_lag['Harga Daging Ayam Broiler'].shift(i)
 
-            st.line_chart(future_df.set_index('Tanggal')['Prediksi Harga Daging'])
-            st.dataframe(future_df)
+        df_lag.dropna(inplace=True)
+
+        X_lag = df_lag[[f'lag_{i}' for i in range(1, n_lags + 1)]]
+        y_lag = df_lag['Harga Daging Ayam Broiler']
+
+        X_train_lag, X_test_lag, y_train_lag, y_test_lag = train_test_split(X_lag, y_lag, test_size=0.2, shuffle=False)
+
+        scaler_lag = StandardScaler()
+        X_train_scaled_lag = scaler_lag.fit_transform(X_train_lag)
+        X_test_scaled_lag = scaler_lag.transform(X_test_lag)
+
+        # Gunakan best_model hasil tuning
+        best_model.fit(X_train_scaled_lag, y_train_lag)
+
+        last_known = df['Harga Daging Ayam Broiler'].iloc[-n_lags:].tolist()
+        future_preds = []
+
+        for _ in range(14):
+            input_lags = pd.DataFrame([last_known[-n_lags:]], columns=[f'lag_{i}' for i in range(1, n_lags + 1)])
+            input_scaled = scaler_lag.transform(input_lags)
+            next_pred = best_model.predict(input_scaled)[0]
+            future_preds.append(round(float(next_pred), 2))
+            last_known.append(next_pred)
+
+        # Ambil data historis terakhir 14 hari
+        historical_days = 14
+        historical_data = df['Harga Daging Ayam Broiler'].iloc[-historical_days:].tolist()
+
+        # Buat sumbu x dari -13 s.d. 14
+        days = list(range(-historical_days + 1, 14 + 1))  # -13 to 14
+
+        # Visualisasi grafik
+        st.subheader("📈 Grafik Prediksi 14 Hari ke Depan")
+        fig2, ax2 = plt.subplots(figsize=(12, 6))
+        ax2.plot(days[:historical_days], historical_data, label='Data Aktual Sebelumnya', marker='o')
+        ax2.plot(days[historical_days:], future_preds, label='Prediksi 14 Hari ke Depan', marker='o', linestyle='--')
+        ax2.axvline(x=0, color='gray', linestyle='--', label='Hari Ini')
+        ax2.set_title("Visualisasi Prediksi Harga Daging Ayam Ras 14 Hari ke Depan")
+        ax2.set_xlabel("Hari")
+        ax2.set_ylabel("Harga (Rp)")
+        ax2.legend()
+        ax2.grid(True)
+        st.pyplot(fig2)
+
     else:
-        st.warning("Silakan lakukan preprocessing dan model terlebih dahulu.")
+        st.warning("Model dan data belum tersedia. Harap lakukan preprocessing dan pelatihan model terlebih dahulu.")
