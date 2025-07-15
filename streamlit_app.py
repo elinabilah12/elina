@@ -204,6 +204,32 @@ elif menu == "⚙ Preprocessing":
     else:
         st.warning("⚠ Silakan upload dataset terlebih dahulu.")
 
+# ================ MENU: VISUALISASI ===================
+elif menu == "📈 Visualisasi":
+    st.header("📈 Visualisasi Dataset")
+
+    if 'df_clean' in st.session_state:
+        df = st.session_state['df_clean']
+
+        # Histogram harga daging
+        fig, ax = plt.subplots()
+        sns.histplot(df['daging'], kde=True, ax=ax)
+        st.pyplot(fig)
+
+        # Garis waktu pergerakan harga
+        fig3, ax3 = plt.subplots(figsize=(10,5))
+        ax3.plot(df['tanggal'], df['pakan'], label='Pakan')
+        ax3.plot(df['tanggal'], df['doc'], label='DOC')
+        ax3.plot(df['tanggal'], df['jagung'], label='Jagung')
+        ax3.plot(df['tanggal'], df['daging'], label='Daging')
+        ax3.set_title("Pergerakan Harga Komoditas")
+        ax3.set_xlabel("Tanggal")
+        ax3.set_ylabel("Harga")
+        ax3.legend()
+        st.pyplot(fig3)
+    else:
+        st.warning("Lakukan preprocessing terlebih dahulu.")
+
 # ================ MENU: MODEL =========================
 elif menu == "🤖 Model":
     st.header("🤖 Model")
