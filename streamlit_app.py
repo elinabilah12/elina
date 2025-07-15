@@ -396,6 +396,12 @@ elif menu == "📉 Hasil Prediksi":
         # ================================
         st.subheader("📅 Prediksi 14 Hari ke Depan")
 
+        # ✅ CEK apakah kolom 'Harga Daging Ayam Broiler' tersedia
+        if 'Harga Daging Ayam Broiler' not in df.columns:
+            st.error("❌ Kolom 'Harga Daging Ayam Broiler' tidak ditemukan di DataFrame. Kolom yang tersedia:")
+            st.write(df.columns.tolist())
+            st.stop()
+
         n_lags = 7
         df_lag = df[['Harga Daging Ayam Broiler']].copy()
         for i in range(1, n_lags + 1):
@@ -413,6 +419,7 @@ elif menu == "📉 Hasil Prediksi":
         X_test_scaled_lag = scaler_lag.transform(X_test_lag)
 
         # Gunakan best_model hasil tuning
+        best_model = model_optuna
         best_model.fit(X_train_scaled_lag, y_train_lag)
 
         last_known = df['Harga Daging Ayam Broiler'].iloc[-n_lags:].tolist()
@@ -447,4 +454,4 @@ elif menu == "📉 Hasil Prediksi":
 
     else:
         st.warning("Model dan data belum tersedia. Harap lakukan preprocessing dan pelatihan model terlebih dahulu.")
-        
+
