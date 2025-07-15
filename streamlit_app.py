@@ -310,13 +310,20 @@ elif menu == "🤖 Model":
         rmse_best, mape_best = 304.29, 0.31 
 
         st.success("✅ Model selesai ditraining.")
+        # Simpan model dan data ke session_state agar bisa diakses oleh halaman hasil prediksi
+        st.session_state['model_default'] = model_default
+        st.session_state['model_optuna'] = best_model
+        st.session_state['X_test'] = X_test_scaled
+        st.session_state['X_train'] = X_train_scaled
+        st.session_state['y_test'] = y_test
+
 
         st.markdown("### 📈 Perbandingan Performa Model")
         st.markdown(f"""
         | Model                     | RMSE     | MAPE    |
         |---------------------------|----------|---------|
-        | *XGBoost Default*       | {rmse_default:.2f} | {mape_default:.2f}% |
-        | *XGBoost + Optuna*      | {rmse_best:.2f} | {mape_best:.2f}% |
+        | **XGBoost Default**       | {rmse_default:.2f} | {mape_default:.2f}% |
+        | **XGBoost + Optuna**      | {rmse_best:.2f} | {mape_best:.2f}% |
         """)
 
     if all(key in st.session_state for key in ['model_default', 'model_optuna', 'X_test', 'y_test', 'df_clean']):
@@ -341,21 +348,11 @@ elif menu == "🤖 Model":
         # Pastikan kolom Tanggal dalam format datetime
         hasil_df['Tanggal'] = pd.to_datetime(hasil_df['Tanggal'])
     
-        # Visualisasi grafik Prediksi vs Aktual
-        st.subheader("📉 Grafik Prediksi vs Aktual")
-        fig1, ax1 = plt.subplots(figsize=(12, 5))
-        ax1.plot(hasil_df['Tanggal'], hasil_df['Aktual'], label='Aktual', linewidth=2)
-        ax1.plot(hasil_df['Tanggal'], hasil_df['Prediksi Default'], label='Prediksi Default', linestyle='--')
-        ax1.plot(hasil_df['Tanggal'], hasil_df['Prediksi Tuned'], label='Prediksi Tuned', linestyle='--')
-        ax1.set_title("Perbandingan Harga Aktual vs Prediksi")
-        ax1.legend()
-        ax1.tick_params(axis='x', rotation=45)
-        st.pyplot(fig1)
-    
     else:
         st.warning("Data belum tersedia. Silakan lakukan preprocessing atau pelatihan model terlebih dahulu.")
 
-# ================ MENU: HASIL PREDIKSI ========================= 
+   
+# ================ MENU: HASIL PREDIKSI ================
 elif menu == "📉 Hasil Prediksi":
     st.header("📉 Hasil Prediksi")
 
@@ -450,3 +447,4 @@ elif menu == "📉 Hasil Prediksi":
 
     else:
         st.warning("Model dan data belum tersedia. Harap lakukan preprocessing dan pelatihan model terlebih dahulu.")
+        
