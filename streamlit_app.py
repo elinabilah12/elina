@@ -334,15 +334,17 @@ elif menu == "🤖 Model":
 elif menu == "📉 Hasil Prediksi":
     st.header("📉 Hasil Prediksi")
 
+     # Grafik Prediksi vs Aktual
+        st.subheader("📉 Grafik Prediksi vs Aktual")
+
+        tanggal_data = df.iloc[y_test.index]['tanggal'] if 'tanggal' in df.columns else pd.date_range(start='2020-01-01', periods=len(y_test))
+
         hasil_df = pd.DataFrame({
-            'Tanggal': df.iloc[y_test.index]['tanggal'].values if 'tanggal' in df.columns else pd.date_range(start='2020-01-01', periods=len(y_test)),
+            'Tanggal': pd.to_datetime(tanggal_data),
             'Aktual': y_test.values,
             'Prediksi Default': y_pred_default,
-            'Prediksi Tuned': y_pred_optuna
-        }).reset_index(drop=True)
-
-        hasil_df['Tanggal'] = pd.to_datetime(hasil_df['Tanggal'], errors='coerce')
-        hasil_df.dropna(subset=['Tanggal'], inplace=True)
+            'Prediksi Tuned': y_pred_tuned
+        })
 
         fig, ax = plt.subplots(figsize=(12, 5))
         ax.plot(hasil_df['Tanggal'], hasil_df['Aktual'], label='Aktual', linewidth=2)
@@ -350,7 +352,7 @@ elif menu == "📉 Hasil Prediksi":
         ax.plot(hasil_df['Tanggal'], hasil_df['Prediksi Tuned'], label='Tuned', linestyle='--')
         ax.set_title("Perbandingan Harga Aktual vs Prediksi")
         ax.set_xlabel("Tanggal")
-        ax.set_ylabel("Harga")
+        ax.set_ylabel("Harga Daging")
         ax.legend()
         ax.grid(True)
         ax.tick_params(axis='x', rotation=45)
