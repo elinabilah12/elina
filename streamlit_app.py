@@ -361,7 +361,6 @@ elif menu == "📉 Hasil Prediksi":
         model_optuna = st.session_state['model_optuna']
         X_test = st.session_state['X_test']
         y_test = st.session_state['y_test']
-        X_train = st.session_state['X_train']
         df = st.session_state['df_clean']  # dataframe yang sudah dibersihkan
 
         # ====================
@@ -377,7 +376,7 @@ elif menu == "📉 Hasil Prediksi":
 
         hasil_df = pd.DataFrame({
             'Tanggal': df.iloc[y_test.index]['tanggal'].values,
-            'Aktual': y_test,
+            'Aktual': y_test.values,
             'Prediksi XGBoost': y_pred_default,
             'Prediksi XGBoost + Optuna': y_pred_best
         })
@@ -397,53 +396,38 @@ elif menu == "📉 Hasil Prediksi":
         st.subheader("📅 Prediksi 14 Hari ke Depan")
 
         n_lags = 7
-        target_col = 'daging'  # Ubah ke 'daging_log' kalau pakai log-transformed
+        target_col = 'daging'  # Ganti ke 'daging_log' kalau pakai log
 
-        # Cek apakah kolom target tersedia
         if target_col not in df.columns:
             st.error(f"❌ Kolom '{target_col}' tidak ditemukan di DataFrame. Kolom yang tersedia:\n\n{df.columns.tolist()}")
             st.stop()
 
-        # Buat data dengan lag
+        # Buat fitur lag
         df_lag = df[[target_col]].copy()
         for i in range(1, n_lags + 1):
             df_lag[f'lag_{i}'] = df_lag[target_col].shift(i)
-
         df_lag.dropna(inplace=True)
 
         X_lag = df_lag[[f'lag_{i}' for i in range(1, n_lags + 1)]]
         y_lag = df_lag[target_col]
 
-        X_train_lag, X_test_lag, y_train_lag, y_test_lag = train_test_split(
-            X_lag, y_lag, test_size=0.2, shuffle=False
-        )
-
-        scaler_lag = StandardScaler()
-        X_train_scaled_lag = scaler_lag.fit_transform(X_train_lag)
-        X_test_scaled_lag = scaler_lag.transform(X_test_lag)
-
-        # Gunakan model terbaik dari Optuna (tanpa fit ulang!)
+        # Simulasi prediksi ke depan
         best_model = model_optuna
-
-        # Prediksi 14 hari ke depan
         last_known = df[target_col].iloc[-n_lags:].tolist()
         future_preds = []
 
         for _ in range(14):
             input_lags = pd.DataFrame([last_known[-n_lags:]], columns=[f'lag_{i}' for i in range(1, n_lags + 1)])
-            input_scaled = scaler_lag.transform(input_lags)
-            next_pred = best_model.predict(input_scaled)[0]
+            next_pred = best_model.predict(input_lags)[0]
             future_preds.append(round(float(next_pred), 2))
             last_known.append(next_pred)
 
-        # Ambil 14 hari terakhir dari data historis
+        # Ambil 14 hari terakhir untuk dibandingkan
         historical_days = 14
         historical_data = df[target_col].iloc[-historical_days:].tolist()
+        days = list(range(-historical_days + 1, 15))  # -13 s.d. 14
 
-        # Buat sumbu x: -13 s.d. 14
-        days = list(range(-historical_days + 1, 14 + 1))  # -13 to 14
-
-        # Visualisasi grafik
+        # Visualisasi prediksi ke depan
         st.subheader("📈 Grafik Prediksi 14 Hari ke Depan")
         fig2, ax2 = plt.subplots(figsize=(12, 6))
         ax2.plot(days[:historical_days], historical_data, label='Data Aktual Sebelumnya', marker='o')
@@ -456,7 +440,7 @@ elif menu == "📉 Hasil Prediksi":
         ax2.grid(True)
         st.pyplot(fig2)
 
-        # Tabel hasil prediksi
+        # Tabel prediksi
         st.subheader("📋 Tabel Hasil Prediksi 14 Hari ke Depan")
         pred_table = pd.DataFrame({
             'Hari ke-': [f'Hari ke-{i+1}' for i in range(14)],
@@ -465,4 +449,5 @@ elif menu == "📉 Hasil Prediksi":
         st.table(pred_table)
 
     else:
-        st.warning("Model dan data belum tersedia. Harap lakukan preprocessing dan pelatihan model terlebih dahulu.")
+        st.warning("⚠️ Model dan data belum tersedia. Harap lakukan preprocessing dan pelatihan model terlebih dahulu.")
+
