@@ -325,6 +325,30 @@ elif menu == "🤖 Model":
         X_test = st.session_state['X_test']
         y_test = st.session_state['y_test']
         df = st.session_state['df_clean']
+    # Grafik Prediksi vs Aktual
+        st.subheader("📉 Grafik Prediksi vs Aktual")
+
+        tanggal_data = df.iloc[y_test.index]['tanggal'] if 'tanggal' in df.columns else pd.date_range(start='2020-01-01', periods=len(y_test))
+
+        hasil_df = pd.DataFrame({
+            'Tanggal': pd.to_datetime(tanggal_data),
+            'Aktual': y_test.values,
+            'Prediksi Default': y_pred_default,
+            'Prediksi Tuned': y_pred_tuned
+        })
+
+        fig, ax = plt.subplots(figsize=(12, 5))
+        ax.plot(hasil_df['Tanggal'], hasil_df['Aktual'], label='Aktual', linewidth=2)
+        ax.plot(hasil_df['Tanggal'], hasil_df['Prediksi Default'], label='Default', linestyle='--')
+        ax.plot(hasil_df['Tanggal'], hasil_df['Prediksi Tuned'], label='Tuned', linestyle='--')
+        ax.set_title("Perbandingan Harga Aktual vs Prediksi")
+        ax.set_xlabel("Tanggal")
+        ax.set_ylabel("Harga Daging")
+        ax.legend()
+        ax.grid(True)
+        ax.tick_params(axis='x', rotation=45)
+        st.pyplot(fig)
+
     
     else:
         st.warning("Data belum tersedia. Silakan lakukan preprocessing atau pelatihan model terlebih dahulu.")
