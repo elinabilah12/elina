@@ -231,7 +231,7 @@ elif menu == "📈 Visualisasi":
         st.warning("Lakukan preprocessing terlebih dahulu.")
         
 # ================ MENU: MODEL =========================
-with tab4:
+elif menu == "🤖 Model":
     st.header("🤖 Model")
 
     if 'df_clean' in st.session_state:
@@ -310,7 +310,7 @@ with tab4:
 
    
 # ================ MENU: HASIL PREDIKSI ================
-with tab5:
+elif menu == "📉 Hasil Prediksi":
     st.header("📉 Hasil Prediksi")
 
     if 'df_clean' in st.session_state:
