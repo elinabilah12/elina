@@ -394,7 +394,7 @@ elif menu == "📉 Hasil Prediksi":
         # ================================
         # Prediksi 14 Hari ke Depan (Lag Only)
         # ================================
-        st.subheader("📅 Prediksi 14 Hari ke Depan")
+        st.subheader("🗕️ Prediksi 14 Hari ke Depan")
 
         n_lags = 7
         target_col = 'daging'  # kolom target
