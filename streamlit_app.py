@@ -397,9 +397,8 @@ elif menu == "📉 Hasil Prediksi":
         st.subheader("📅 Prediksi 14 Hari ke Depan")
 
         n_lags = 7
-        target_col = 'daging'  # kolom target yang sudah dinormalisasi sebelumnya
+        target_col = 'daging'  # kolom target
 
-        # Buat data lag
         df_lag = df[[target_col]].copy()
         for i in range(1, n_lags + 1):
             df_lag[f'lag_{i}'] = df_lag[target_col].shift(i)
@@ -409,15 +408,11 @@ elif menu == "📉 Hasil Prediksi":
         y_lag = df_lag[target_col]
 
         # Split dan scaling
-        from sklearn.model_selection import train_test_split
-        from sklearn.preprocessing import StandardScaler
-
         X_train_lag, X_test_lag, y_train_lag, y_test_lag = train_test_split(X_lag, y_lag, test_size=0.2, shuffle=False)
         scaler_lag = StandardScaler()
         X_train_scaled_lag = scaler_lag.fit_transform(X_train_lag)
-        X_test_scaled_lag = scaler_lag.transform(X_test_lag)
 
-        # Gunakan parameter yang sama persis dari model_optuna
+        # Gunakan parameter model terbaik (bisa disesuaikan)
         model_lag = XGBRegressor(
             n_estimators=200,
             max_depth=4,
@@ -434,7 +429,7 @@ elif menu == "📉 Hasil Prediksi":
         model_lag.fit(X_train_scaled_lag, y_train_lag)
 
         # Prediksi 14 hari ke depan
-        last_known = df[target_col].iloc[-n_lags:].tolist()
+        last_known = df[target_col].dropna().iloc[-n_lags:].tolist()
         future_preds = []
 
         for _ in range(14):
@@ -446,10 +441,10 @@ elif menu == "📉 Hasil Prediksi":
 
         # Ambil 14 hari terakhir dari data historis
         historical_days = 14
-        historical_data = df[target_col].iloc[-historical_days:].tolist()
+        historical_data = df[target_col].dropna().iloc[-historical_days:].tolist()
 
         # Buat sumbu x dari -13 s.d. 14
-        days = list(range(-historical_days + 1, 14 + 1))  # -13 s.d. 14
+        days = list(range(-historical_days + 1, 14 + 1))
 
         # Visualisasi grafik
         st.subheader("📈 Grafik Prediksi 14 Hari ke Depan")
@@ -472,12 +467,10 @@ elif menu == "📉 Hasil Prediksi":
         })
         st.table(pred_table)
 
-        # Debug output (opsional)
+        # Debug output
         with st.expander("📢 Debug Output (Hasil Prediksi Mentah)"):
             for i, val in enumerate(future_preds, 1):
                 st.write(f"Hari ke-{i}: Rp{val:,.2f}")
 
     else:
         st.warning("Model dan data belum tersedia. Harap lakukan preprocessing dan pelatihan model terlebih dahulu.")
-        
-
