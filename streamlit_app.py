@@ -452,7 +452,7 @@ elif menu == "📉 Hasil Prediksi":
         ax2.plot(days[:historical_days], historical_data, label='Data Aktual Sebelumnya', marker='o')
         ax2.plot(days[historical_days:], future_preds, label='Prediksi 14 Hari ke Depan', marker='o', linestyle='--')
         ax2.axvline(x=0, color='gray', linestyle='--', label='Hari Ini')
-        ax2.set_title("Visualisasi Prediksi Harga Daging Ayam Ras 14 Hari ke Depan")
+        ax2.set_title("Visualisasi Prediksi Harga Daging Ayam Broiler 14 Hari ke Depan")
         ax2.set_xlabel("Hari")
         ax2.set_ylabel("Harga (Rp)")
         ax2.legend()
