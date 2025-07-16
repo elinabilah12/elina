@@ -469,8 +469,8 @@ elif menu == "📉 Hasil Prediksi":
 
         # Debug output
         with st.expander("📢 Debug Output (Hasil Prediksi Mentah)"):
-            for i, val in enumerate(future_preds, 1):
-                st.write(f"Hari ke-{i}: Rp{val:,.2f}")
+            st.write("Prediksi 14 hari ke depan telah berhasil dibuat untuk Hari ke-1 sampai Hari ke-14.")
+
 
     else:
         st.warning("Model dan data belum tersedia. Harap lakukan preprocessing dan pelatihan model terlebih dahulu.")
