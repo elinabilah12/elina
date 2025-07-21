@@ -459,13 +459,16 @@ elif menu == "📉 Hasil Prediksi":
         ax2.grid(True)
         st.pyplot(fig2)
 
-        # Tabel hasil prediksi
+        # Tabel hasil prediksi dalam format seperti yang diinginkan
         st.subheader("📋 Tabel Hasil Prediksi 14 Hari ke Depan")
-        pred_table = pd.DataFrame({
-            'Hari ke-': [f'Hari ke-{i+1}' for i in range(14)],
-            'Prediksi Harga (Rp)': [f"Rp{pred:,.2f}" for pred in future_preds]
-        })
-        st.table(pred_table)
+        
+        formatted_preds = [
+            f"Hari ke-{i+1}: Rp{pred:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+            for i, pred in enumerate(future_preds)
+        ]
+        
+        for line in formatted_preds:
+            st.write(line)
 
         # Debug output
         with st.expander("📢 Debug Output (Hasil Prediksi Mentah)"):
