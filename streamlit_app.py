@@ -459,16 +459,24 @@ elif menu == "📉 Hasil Prediksi":
         ax2.grid(True)
         st.pyplot(fig2)
 
-        # Tabel hasil prediksi dalam format seperti yang diinginkan
+        # Tabel hasil prediksi dengan format rupiah Indonesia dalam bentuk tabel
         st.subheader("📋 Tabel Hasil Prediksi 14 Hari ke Depan")
         
-        formatted_preds = [
-            f"Hari ke-{i+1}: Rp{pred:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-            for i, pred in enumerate(future_preds)
-        ]
+        # Format angka ke format Indonesia: Rp38.596,88
+        formatted_prices = []
+        for pred in future_preds:
+            formatted = f"Rp{pred:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+            formatted_prices.append(formatted)
         
-        for line in formatted_preds:
-            st.write(line)
+        # Buat DataFrame hasil prediksi
+        pred_table = pd.DataFrame({
+            'Hari ke-': [f'Hari ke-{i+1}' for i in range(14)],
+            'Prediksi Harga (Rp)': formatted_prices
+        })
+        
+        # Tampilkan tabel di Streamlit
+        st.table(pred_table)
+
 
         # Debug output
         with st.expander("📢 Debug Output (Hasil Prediksi Mentah)"):
